@@ -353,6 +353,27 @@ struct level_0_discovery_block_sid_authentication_feature {
     uint8_t reserved_3;
 };
 
+struct level_0_discovery_pyrite_feature {
+    struct level_0_discovery_feature_shared shared;
+    uint16_t base_comID;
+    uint16_t number_of_comIDs;
+    uint8_t reserved_1[5];
+    uint8_t initial_pin_indicator;
+    uint8_t behavior_of_pin_upon_revert;
+    uint8_t reserved_2[5];
+};
+
+struct level_0_discovery_supported_data_removal_mechanism_feature {
+    struct level_0_discovery_feature_shared shared;
+    uint8_t reserved_1;
+    uint8_t data_removal_operation_processing : 1;
+    uint8_t reserved_2 : 7;
+    uint8_t supported_data_removal_mechanism;
+    uint8_t data_removal_time_format;
+    uint16_t data_removal_time_for_supported_data_removal_mechanism[6];
+    uint8_t reserved_3[16];
+};
+
 #define DISK_DEVICE_UNKNOWN_FEATURE_MAX_LENGTH 1024
 struct disk_device {
     int fd;
@@ -374,6 +395,8 @@ struct disk_device {
         struct level_0_discovery_single_user_mode_feature single_user_mode;
         struct level_0_discovery_data_store_feature data_store;
         struct level_0_discovery_block_sid_authentication_feature block_sid_authentication;
+        struct level_0_discovery_pyrite_feature pyrite;
+        struct level_0_discovery_supported_data_removal_mechanism_feature supported_data_removal_mechanism;
         uint8_t unknown[DISK_DEVICE_UNKNOWN_FEATURE_MAX_LENGTH];
         size_t unknown_len;
     } features;

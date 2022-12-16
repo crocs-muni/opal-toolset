@@ -175,6 +175,56 @@ static void print_level_0_discovery(struct disk_device *dev)
                body->hardware_reset);
     }
 
+    if (dev->features.pyrite.shared.feature_code) {
+        struct level_0_discovery_pyrite_feature *body = &dev->features.pyrite;
+
+        print_comma_start(&first);
+        printf("  \"Pyrite SSC Feature Descriptor\": {\n"
+               "    \"Version\": %i,\n"
+               "    \"Base ComID\": %i,\n"
+               "    \"Number of ComIDs\": %i,\n"
+               "    \"Initial C_PIN_SID PIN Indicator\": %i,\n"
+               "    \"Behavior of C_PIN_SID PIN upon TPer Revert\": %i\n"
+               "  }",
+               body->shared.descriptor_version, swap_endian_16(body->base_comID),
+               swap_endian_16(body->number_of_comIDs), body->initial_pin_indicator, body->behavior_of_pin_upon_revert);
+    }
+
+    if (dev->features.supported_data_removal_mechanism.shared.feature_code) {
+        struct level_0_discovery_supported_data_removal_mechanism_feature *body =
+                &dev->features.supported_data_removal_mechanism;
+
+        print_comma_start(&first);
+        printf("  \"Supported Data Removal Mechanism Feature Descriptor\": {\n"
+               "    \"Version\": %i,\n"
+               "    \"Data Removal Operation Processing\": %i,\n"
+               "    \"Supported Data Removal Mechanism\": %i,\n"
+               "    \"Data Removal Time Format for Bit 0\": %i,\n"
+               "    \"Data Removal Time Format for Bit 1\": %i,\n"
+               "    \"Data Removal Time Format for Bit 2\": %i,\n"
+               "    \"Data Removal Time Format for Bit 3\": %i,\n"
+               "    \"Data Removal Time Format for Bit 4\": %i,\n"
+               "    \"Data Removal Time Format for Bit 5\": %i,\n"
+               "    \"Data Removal Time for Supported Data Removal Mechanism Bit 0\": %i,\n"
+               "    \"Data Removal Time for Supported Data Removal Mechanism Bit 1\": %i,\n"
+               "    \"Data Removal Time for Supported Data Removal Mechanism Bit 2\": %i,\n"
+               "    \"Data Removal Time for Supported Data Removal Mechanism Bit 3\": %i,\n"
+               "    \"Data Removal Time for Supported Data Removal Mechanism Bit 4\": %i,\n"
+               "    \"Data Removal Time for Supported Data Removal Mechanism Bit 5\": %i\n"
+               "  }",
+               body->shared.descriptor_version, body->data_removal_operation_processing,
+               body->supported_data_removal_mechanism,
+               !!(body->data_removal_time_format & (1 << 0)), !!(body->data_removal_time_format & (1 << 1)),
+               !!(body->data_removal_time_format & (1 << 2)), !!(body->data_removal_time_format & (1 << 3)),
+               !!(body->data_removal_time_format & (1 << 4)), !!(body->data_removal_time_format & (1 << 5)),
+               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[0]),
+               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[1]),
+               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[2]),
+               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[3]),
+               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[4]),
+               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[5]));
+    }
+
     for (size_t i = 0; i < dev->features.unknown_len;) {
         struct level_0_discovery_feature_shared *header =
                 (struct level_0_discovery_feature_shared *)(dev->features.unknown + i);

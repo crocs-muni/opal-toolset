@@ -121,9 +121,17 @@ int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, int fea
     } else if (feature_code == 0x0202) {
         struct level_0_discovery_data_store_feature *body = data;
         dev->features.data_store = *body;
+    } else if (feature_code == 0x0303) {
+        struct level_0_discovery_pyrite_feature *body = data;
+        dev->features.pyrite = *body;
+
+        dev->base_com_id = swap_endian_16(body->base_comID);
     } else if (feature_code == 0x0402) {
         struct level_0_discovery_block_sid_authentication_feature *body = data;
         dev->features.block_sid_authentication = *body;
+    } else if (feature_code == 0x0404) {
+        struct level_0_discovery_supported_data_removal_mechanism_feature *body = data;
+        dev->features.supported_data_removal_mechanism = *body;
     } else {
         struct level_0_discovery_feature_shared *body = data;
 
