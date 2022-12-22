@@ -489,23 +489,36 @@ int process_method_response(const unsigned char *buffer, size_t buffer_len)
         i += 8; // method uid
     }
 
-    const unsigned char *data_tail = data + data_length - 7;
+    size_t backtracking_length = 8;
+    if (backtracking_length > data_length - 7) {
+        backtracking_length = data_length - 7;
+    }
+    for (size_t i = 0; i < backtracking_length; ++i) {
+        const unsigned char *data_tail = data + data_length - 7 - i;
 
-    if (data_tail[0] != END_LIST_TOKEN ||
-        data_tail[1] != END_OF_DATA_TOKEN ||
-        data_tail[2] != START_LIST_TOKEN ||
-        data_tail[4] != 00 ||
-        data_tail[5] != 00 ||
-        data_tail[6] != END_LIST_TOKEN) {
-        LOG(ERROR, "Received unexpected tokens.\n");
-        return -1;
+        if (data_tail[0] != END_LIST_TOKEN ||
+            data_tail[1] != END_OF_DATA_TOKEN ||
+            data_tail[2] != START_LIST_TOKEN ||
+            data_tail[4] != 00 ||
+            data_tail[5] != 00 ||
+            data_tail[6] != END_LIST_TOKEN) {
+
+            if (data_tail[6] == EMPTY_ATOM_TOKEN) {
+                continue;
+            } else {
+                LOG(ERROR, "Received unexpected tokens.\n");
+                return -1;
+            }
+        }
+
+        if ((status_code = data_tail[3]) != MSC_SUCCESS) {
+            LOG(ERROR, "Received non-successful status code: %s.\n", error_to_string(status_code));
+        }
+
+        return status_code;
     }
 
-    if ((status_code = data_tail[3]) != MSC_SUCCESS) {
-        LOG(ERROR, "Received non-successful status code: %s.\n", error_to_string(status_code));
-    }
-
-    return status_code;
+    return -1;
 }
 
 int invoke_method(struct disk_device *dev, unsigned char *buff_in, size_t buff_in_len, unsigned char *buff_out,
