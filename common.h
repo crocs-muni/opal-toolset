@@ -243,6 +243,8 @@ enum MethodStatusCode {
 };
 const char *error_to_string(enum MethodStatusCode msc);
 
+#pragma pack(1)
+
 struct nvme_identify_controller_data {
     uint8_t vid[2];
     uint8_t ssvid[2];
@@ -373,6 +375,8 @@ struct level_0_discovery_supported_data_removal_mechanism_feature {
     uint16_t data_removal_time_for_supported_data_removal_mechanism[6];
     uint8_t reserved_3[16];
 };
+
+#pragma pack()
 
 #define DISK_DEVICE_UNKNOWN_FEATURE_MAX_LENGTH 1024
 struct disk_device {
