@@ -283,7 +283,8 @@ struct level_0_discovery_tper_feature {
 
 struct level_0_discovery_geometry_feature {
     struct level_0_discovery_feature_shared shared;
-    uint8_t reserved_2;
+    uint8_t align : 1;
+    uint8_t reserved_2 : 7;
     uint8_t reserved_3[7];
     uint32_t logical_block_size;
     uint64_t alignment_granularity;

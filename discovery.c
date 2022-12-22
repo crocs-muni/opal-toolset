@@ -87,11 +87,12 @@ static void print_level_0_discovery(struct disk_device *dev)
         print_comma_start(&first);
         printf("  \"Geometry Feature\": {\n"
                "    \"Version\": %i,\n"
+               "    \"ALIGN\": %i,\n"
                "    \"LogicalBlockSize\": %i,\n"
                "    \"AlignmentGranularity\": %li,\n"
                "    \"LowestAlignedLBA\": %li\n"
                "  }",
-               body->shared.descriptor_version, swap_endian_32(body->logical_block_size),
+               body->shared.descriptor_version, body->align, swap_endian_32(body->logical_block_size),
                swap_endian_64(body->alignment_granularity), swap_endian_64(body->lowest_alignment_LBA));
     }
 
