@@ -36,6 +36,13 @@ static struct argp_option options_setup_range[] = {
     { 0 }
 };
 
+static struct argp_option options_list_range[] = {
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "hex_pin", 0, "Password of user authority", 0 },
+    { "user", ARG_KEY_USER, "id", 0, "User authority id", 0 },
+    { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "Locking range to list", 0 },
+    { 0 }
+};
+
 static struct argp_option options_setup_user[] = {
     { "verify-pin", ARG_KEY_VERIFY_PIN, "hex_pin", 0, "Password of Admin1 authority", 0 },
     { "assign-pin", ARG_KEY_ASSIGN_PIN, "hex_pin", 0, "Password to assign to selected user authority", 0 },
@@ -86,6 +93,7 @@ struct Arguments {
         CMD_PSID_REVERT,
         CMD_RESET,
         CMD_REGENERATE_KEY,
+        CMD_LIST_RANGE,
     } command;
 
     char *device;
@@ -197,6 +205,8 @@ static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
                 arguments->command = CMD_RESET;
             } else if (strcmp(arg, "regenerate_key") == 0) {
                 arguments->command = CMD_REGENERATE_KEY;
+            } else if (strcmp(arg, "list_range") == 0) {
+                arguments->command = CMD_LIST_RANGE;
             } else {
                 printf("Unexpected command.\n");
                 return ARGP_ERR_UNKNOWN;
@@ -259,6 +269,7 @@ int main(int argc, char **argv)
 {
     struct argp argp_unlock = { options_unlock, parse_opt_child, NULL, "unlock_doc", 0, 0, 0 };
     struct argp argp_setup_range = { options_setup_range, parse_opt_child, NULL, "setup_range_doc", 0, 0, 0 };
+    struct argp argp_list_range = { options_list_range, parse_opt_child, NULL, "list_range_doc", 0, 0, 0 };
     struct argp argp_setup_user = { options_setup_user, parse_opt_child, NULL, "setup_user_doc", 0, 0, 0 };
     struct argp argp_setup_tper = { options_setup_tper, parse_opt_child, NULL, "setup_tper_doc", 0, 0, 0 };
     struct argp argp_psid_revert = { options_psid_revert, parse_opt_child, NULL, "psid_revert_doc", 0, 0, 0 };
@@ -267,6 +278,7 @@ int main(int argc, char **argv)
     struct argp_child argp_children[] = {
         { &argp_unlock, 0, "unlock - Lock or unlock a locking range", 0 },
         { &argp_setup_range, 0, "setup_range - Configure a locking range", 0 },
+        { &argp_list_range, 0, "list_range - List the locking range", 0 },
         { &argp_setup_user, 0, "setup_user - Enable a user", 0 },
         { &argp_setup_tper, 0, "setup_tper - Take ownership over the device", 0 },
         { &argp_psid_revert, 0, "psid_revert - Revert the device to factory state", 0 },
@@ -318,6 +330,9 @@ int main(int argc, char **argv)
     } else if (args.command == CMD_REGENERATE_KEY) {
         err = regenerate_key(&dev, args.locking_range, 
                              args.verify_pin, args.verify_pin_len);
+    } else if (args.command == CMD_LIST_RANGE) {
+        err = list_range(&dev, args.locking_range,
+                         args.verify_pin, args.verify_pin_len, args.user[0]);
     } else {
         printf("Invalid command.\n");
 

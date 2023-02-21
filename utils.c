@@ -4,6 +4,8 @@
 
 #include "common.h"
 
+#include <inttypes.h>
+
 static int generate_locking_range_set_command(struct disk_device *dev, unsigned char *buffer, size_t *i,
                                               unsigned char locking_range, uint16_t range_start, uint16_t range_length,
                                               char read_lock_enabled, char write_lock_enabled, char read_locked,
@@ -130,7 +132,7 @@ int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned c
     // RangeStart, RangeLength, ReadLockEnabled and WriteLockEnabled for
     // Locking_Range1
 
-    generate_locking_range_set_command(dev, buffer, &buffer_len, 1, start, length, 1, 1, -1, -1);
+    generate_locking_range_set_command(dev, buffer, &buffer_len, locking_range, start, length, 1, 1, -1, -1);
 
     if ((err = invoke_method(dev, buffer, buffer_len, response, sizeof(response)))) {
         LOG(ERROR, "Failed to setup locking range.\n");
@@ -163,19 +165,35 @@ int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned c
             end_name(boolean_ace, &boolean_ace_len);
         }
     }
+
+    char admin_uid[] = AUTHORITY_XXXX_UID;
+    hex_add(admin_uid, 8, ADMIN_BASE_ID + 1);
+
+    start_name(boolean_ace, &boolean_ace_len);
+    short_atom(boolean_ace, &boolean_ace_len, 1, 0, HALF_UID_AUTHORITY_OBJECT_REF, 4);
+    short_atom(boolean_ace, &boolean_ace_len, 1, 0, admin_uid, 8);
+    end_name(boolean_ace, &boolean_ace_len);
+
+    start_name(boolean_ace, &boolean_ace_len);
+    short_atom(boolean_ace, &boolean_ace_len, 1, 0, HALF_UID_BOOLEAN_ACE, 4);
+    tiny_atom(boolean_ace, &boolean_ace_len, 0, BOOLEAN_OR);
+    end_name(boolean_ace, &boolean_ace_len);
+
     end_list(boolean_ace, &boolean_ace_len);
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 3; ++i) {
         unsigned char ace_uid[8] = { 0 };
         if (i == 0) {
             memcpy(ace_uid, TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_RD_LOCKED, 8);
-        } else {
+        } else if (i == 1) {
             memcpy(ace_uid, TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_WR_LOCKED, 8);
-        }
+        } else {
+            memcpy(ace_uid, TABLE_ACE_LOCKING_RANGE_XXXX_GET_PARAMS, 8);
+	}
         hex_add(ace_uid, 8, locking_range);
 
         if ((err = set_row(dev, ace_uid, TABLE_ACE_COLUMN_BOOLEAN_EXPR, boolean_ace, boolean_ace_len))) {
-            LOG(ERROR, "Failed to set rights for locking range (%s).\n", i == 0 ? "reading" : "writing");
+            LOG(ERROR, "Failed to set rights for locking range (%d: %s).\n", i, i == 0 ? "reading" : "writing");
             close_session(dev);
             return err;
         }
@@ -186,6 +204,74 @@ int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned c
     }
 
     return err;
+}
+
+int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *challenge, size_t challenge_len, size_t user)
+{
+    int err = 0;
+    size_t resp_len = 0;
+    unsigned char resp[2] = { 0 }, locking_range_uid_str[9] = { 0 };
+    uint64_t start, length, rlocked, wlocked, rlck_enabled, wlck_enabled;
+
+    if (locking_range == 0) {
+        memcpy(locking_range_uid_str, LOCKING_RANGE_GLOBAL_UID, 8);
+    } else {
+        memcpy(locking_range_uid_str, LOCKING_RANGE_NNNN_UID, 8);
+        hex_add(locking_range_uid_str, 8, locking_range);
+    }
+
+    // Get Locking Authority session
+    if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
+        LOG(ERROR, "Failed when setting starting session for getting locking range parameters.\n");
+        return err;
+    }
+    // Get Locking Range info (TODO: Request values in a single request. This is suboptimal)
+    if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_RANGE_START, &start))) {
+        LOG(ERROR, "Failed to read Locking Range %u start.\n", locking_range);
+        close_session(dev);
+        return err;
+    }
+    if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_RANGE_END, &length))) {
+        LOG(ERROR, "Failed to read Locking Range %u start.\n", locking_range);
+        close_session(dev);
+        return err;
+    }
+    if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_READ_LOCKED, &rlocked))) {
+        LOG(ERROR, "Failed to read Locking Range %u start.\n", locking_range);
+        close_session(dev);
+        return err;
+    }
+    if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_WRITE_LOCKED, &wlocked))) {
+        LOG(ERROR, "Failed to read Locking Range %u start.\n", locking_range);
+        close_session(dev);
+        return err;
+    }
+    if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_READ_LOCK_ENABLED, &rlck_enabled))) {
+        LOG(ERROR, "Failed to read Locking Range %u start.\n", locking_range);
+        close_session(dev);
+        return err;
+    }
+    if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_WRITE_LOCK_ENABLED, &wlck_enabled))) {
+        LOG(ERROR, "Failed to read Locking Range %u start.\n", locking_range);
+        close_session(dev);
+        return err;
+    }
+
+    if ((err = close_session(dev))) {
+        LOG(ERROR, "Failed to close session.\n");
+        return err;
+    }
+
+    fprintf(stdout,
+            "Locking range %u: Start: %" PRIu64 ", length: %" PRIu64 ", R locked: %s, W locked: %s, R lock enabled: %s, W lock enabled: %s.\n",
+	    locking_range,
+	    start,length,
+	    rlocked ? "yes" : "no",
+	    wlocked ? "yes" : "no",
+	    rlck_enabled ? "yes" : "no",
+	    wlck_enabled ? "yes" : "no");
+
+    return 0;
 }
 
 int setup_user(struct disk_device *dev, size_t user_uid, unsigned char *admin_pin, size_t admin_pin_len,

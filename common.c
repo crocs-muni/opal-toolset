@@ -995,6 +995,69 @@ cleanup:
     return err;
 }
 
+int get_row_int(struct disk_device *dev, unsigned char *object_uid, unsigned char column, uint64_t *output)
+{
+    /*
+    TableUID.Get [
+    ObjectUID.Get [
+    Cellblock : cell_block ]
+    =>
+    [ Result : typeOr { Bytes : bytes, RowValues : list [ ColumnNumber = Value ... ] } ]
+    */
+    uint64_t tmp;
+    size_t i = 0;
+    int err = 0;
+
+    unsigned char buffer[2048] = { 0 };
+
+    prepare_method(buffer, &i, dev, object_uid, METHOD_GET_UID);
+    {
+        start_list(buffer, &i);
+        {
+            start_name(buffer, &i);
+            tiny_atom(buffer, &i, 0, METHOD_GET_PARAMETER_START);
+            tiny_atom(buffer, &i, 0, column);
+            end_name(buffer, &i);
+
+            start_name(buffer, &i);
+            tiny_atom(buffer, &i, 0, METHOD_GET_PARAMETER_END);
+            tiny_atom(buffer, &i, 0, column);
+            end_name(buffer, &i);
+        }
+        end_list(buffer, &i);
+    }
+    finish_method(buffer, &i);
+
+    if ((err = invoke_method(dev, buffer, i, buffer, sizeof(buffer)))) {
+        close_session(dev);
+        return err;
+    }
+
+    size_t pos = sizeof(struct packet_headers);
+    LOG(EVERYTHING, "Packet headers size: %zu.\n", pos);
+    if (buffer[pos + 0] != START_LIST_TOKEN || buffer[pos + 1] != START_LIST_TOKEN ||
+        buffer[pos + 2] != START_NAME_TOKEN) {
+        LOG(ERROR, "Bla Unexpected tokens received.\n");
+        goto cleanup;
+    }
+    pos += 3;
+    if (parse_int(buffer, &pos) != column) {
+        LOG(ERROR, "Unexpected column received.\n");
+        return err;
+    }
+
+    tmp = parse_int(buffer, &pos);
+    if (tmp == UINT64_MAX) {
+        LOG(ERROR, "Failed to parse integer output.\n");
+        return 1;
+    }
+
+    *output = tmp;
+
+cleanup:
+    return err;
+}
+
 unsigned char libata_allow_tpm = 0;
 void get_allow_tpm_status()
 {

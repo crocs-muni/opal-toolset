@@ -177,6 +177,7 @@ enum TrustedCommandDirection {
 #define TABLE_AUTHORITY_COLUMN_ENABLED 5
 #define TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_RD_LOCKED "\x00\x00\x00\x08\x00\x03\xe0\x00"
 #define TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_WR_LOCKED "\x00\x00\x00\x08\x00\x03\xe8\x00"
+#define TABLE_ACE_LOCKING_RANGE_XXXX_GET_PARAMS "\x00\x00\x00\x08\x00\x03\xd0\x00"
 #define TABLE_ACE_COLUMN_BOOLEAN_EXPR 3
 
 #define HALF_UID_AUTHORITY_OBJECT_REF "\x00\x00\x0c\x05"
@@ -513,6 +514,8 @@ int set_row(struct disk_device *dev, const char *object_uid, unsigned char colum
 */
 int get_row_bytes(struct disk_device *dev, unsigned char *object_uid, unsigned char column,
                   unsigned char *output, size_t output_len, size_t *output_written);
+
+int get_row_int(struct disk_device *dev, unsigned char *object_uid, unsigned char column, uint64_t *output);
 
 
 #endif // COMMON_H_

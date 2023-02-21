@@ -16,6 +16,8 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
                 unsigned char *challenge, size_t challenge_len, 
                 uint16_t start, uint16_t length, size_t users[], size_t users_len);
 
+int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *challenge, size_t challenge_len, size_t user);
+
 int setup_user(struct disk_device *dev, size_t user_uid,
                unsigned char *admin_pin, size_t admin_pin_len,
                unsigned char *user_pin, size_t user_pin_len);
