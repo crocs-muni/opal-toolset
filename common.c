@@ -399,13 +399,13 @@ void method_status_list(unsigned char *buffer, size_t *i)
 
 void tiny_atom(unsigned char *buffer, size_t *i, unsigned char S, unsigned char V)
 {
-    buffer[*i] = 0b0 << 7 | S << 6 | V;
+    buffer[*i] = 0b0 << 7 | (S & 0x1) << 6 | V;
     *i += 1;
 }
 
 void short_atom(unsigned char *buffer, size_t *i, unsigned char B, unsigned char S, const uint8_t *V, size_t V_len)
 {
-    buffer[*i] = 0b10 << 6 | B << 5 | S << 4 | V_len;
+    buffer[*i] = 0b10 << 6 | (B & 0x1) << 5 | (S & 0x1) << 4 | V_len;
     *i += 1;
 
     memcpy(buffer + *i, V, V_len);
@@ -414,7 +414,7 @@ void short_atom(unsigned char *buffer, size_t *i, unsigned char B, unsigned char
 
 void medium_atom(unsigned char *buffer, size_t *i, unsigned char B, unsigned char S, const uint8_t *V, size_t V_len)
 {
-    buffer[*i] = (0b110 << 5) | (B << 4) | (S << 3) | (V_len >> 8);
+    buffer[*i] = 0b110 << 5 | (B & 0x1) << 4 | (S & 0x1) << 3 | V_len >> 8;
     buffer[*i + 1] = 0b11111111 & V_len;
     *i += 2;
 
