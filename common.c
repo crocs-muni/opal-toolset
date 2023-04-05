@@ -1035,9 +1035,18 @@ int get_row_int(struct disk_device *dev, unsigned char *object_uid, unsigned cha
 
     size_t pos = sizeof(struct packet_headers);
     LOG(EVERYTHING, "Packet headers size: %zu.\n", pos);
-    if (buffer[pos + 0] != START_LIST_TOKEN || buffer[pos + 1] != START_LIST_TOKEN ||
-        buffer[pos + 2] != START_NAME_TOKEN) {
-        LOG(ERROR, "Bla Unexpected tokens received.\n");
+
+    if (buffer[pos + 0] != START_LIST_TOKEN || buffer[pos + 1] != START_LIST_TOKEN) {
+        LOG(ERROR, "Unexpected tokens received: %02x %02x\n", buffer[pos], buffer[pos + 1]);
+        goto cleanup;
+    }
+
+    if (buffer[pos + 2] == END_LIST_TOKEN && buffer[pos + 3] == END_LIST_TOKEN) {
+        return 1;
+    }
+
+    if (buffer[pos + 2] != START_NAME_TOKEN) {
+        LOG(ERROR, "Unexpected tokens received: %02x\n", buffer[pos + 2]);
         goto cleanup;
     }
     pos += 3;
