@@ -185,7 +185,6 @@ static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
         }
         break;
     case ARG_KEY_VERBOSE:
-        printf("AAA\n");
         current_log_level = current_log_level == EVERYTHING ? EVERYTHING : current_log_level + 1;
         break;
     case ARGP_KEY_ARG:
