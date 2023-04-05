@@ -661,13 +661,13 @@ int start_session(struct disk_device *dev, const unsigned char *SPID, size_t use
 {
     int err = 0;
 
-    LOG(INFO, "\n------- START SESSION -------\n");
+    LOG(INFO, "------- START SESSION -------\n");
 
     unsigned char buffer[2048] = { 0 };
     size_t i = 0;
 
     do_level_0_discovery(dev);
-    LOG(INFO, "base_com_id=%x\nuser_id=%lu\n", dev->base_com_id, user_id);
+    LOG(INFO, "base_com_id=%x user_id=%lu\n", dev->base_com_id, user_id);
 
 
     if (user_id < SPECIAL_BASE_ID) {
@@ -740,7 +740,7 @@ int close_session(struct disk_device *dev)
     dev->host_session_id = 0;
 
     LOG(INFO, "close_session err: %i\n", err);
-    LOG(INFO, "------- CLOSE SESSION -------n\n\n");
+    LOG(INFO, "------- CLOSE SESSION -------\n\n");
 
     return err;
 }

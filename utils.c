@@ -189,7 +189,7 @@ int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned c
             memcpy(ace_uid, TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_WR_LOCKED, 8);
         } else {
             memcpy(ace_uid, TABLE_ACE_LOCKING_RANGE_XXXX_GET_PARAMS, 8);
-	}
+        }
         hex_add(ace_uid, 8, locking_range);
 
         if ((err = set_row(dev, ace_uid, TABLE_ACE_COLUMN_BOOLEAN_EXPR, boolean_ace, boolean_ace_len))) {
@@ -232,27 +232,27 @@ int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *c
         return err;
     }
     if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_RANGE_END, &length))) {
-        LOG(ERROR, "Failed to read Locking Range %u start.\n", locking_range);
+        LOG(ERROR, "Failed to read Locking Range %u length.\n", locking_range);
         close_session(dev);
         return err;
     }
     if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_READ_LOCKED, &rlocked))) {
-        LOG(ERROR, "Failed to read Locking Range %u start.\n", locking_range);
+        LOG(ERROR, "Failed to read Locking Range %u read locked.\n", locking_range);
         close_session(dev);
         return err;
     }
     if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_WRITE_LOCKED, &wlocked))) {
-        LOG(ERROR, "Failed to read Locking Range %u start.\n", locking_range);
+        LOG(ERROR, "Failed to read Locking Range %u write locked.\n", locking_range);
         close_session(dev);
         return err;
     }
     if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_READ_LOCK_ENABLED, &rlck_enabled))) {
-        LOG(ERROR, "Failed to read Locking Range %u start.\n", locking_range);
+        LOG(ERROR, "Failed to read Locking Range %u read lock enabled.\n", locking_range);
         close_session(dev);
         return err;
     }
     if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_WRITE_LOCK_ENABLED, &wlck_enabled))) {
-        LOG(ERROR, "Failed to read Locking Range %u start.\n", locking_range);
+        LOG(ERROR, "Failed to read Locking Range %u write lock enabled.\n", locking_range);
         close_session(dev);
         return err;
     }
@@ -264,12 +264,12 @@ int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *c
 
     fprintf(stdout,
             "Locking range %u: Start: %" PRIu64 ", length: %" PRIu64 ", R locked: %s, W locked: %s, R lock enabled: %s, W lock enabled: %s.\n",
-	    locking_range,
-	    start,length,
-	    rlocked ? "yes" : "no",
-	    wlocked ? "yes" : "no",
-	    rlck_enabled ? "yes" : "no",
-	    wlck_enabled ? "yes" : "no");
+            locking_range,
+            start,length,
+            rlocked ? "yes" : "no",
+            wlocked ? "yes" : "no",
+            rlck_enabled ? "yes" : "no",
+            wlck_enabled ? "yes" : "no");
 
     return 0;
 }
