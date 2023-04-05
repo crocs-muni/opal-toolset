@@ -14,7 +14,7 @@ int unlock_range(struct disk_device *dev, unsigned char locking_range, size_t us
 
 int setup_range(struct disk_device *dev, unsigned char locking_range,
                 unsigned char *challenge, size_t challenge_len, 
-                uint16_t start, uint16_t length, size_t users[], size_t users_len);
+                uint64_t start, uint64_t length, size_t users[], size_t users_len);
 
 int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *challenge, size_t challenge_len, size_t user);
 

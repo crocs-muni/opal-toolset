@@ -7,7 +7,7 @@
 #include <inttypes.h>
 
 static int generate_locking_range_set_command(struct disk_device *dev, unsigned char *buffer, size_t *i,
-                                              unsigned char locking_range, uint16_t range_start, uint16_t range_length,
+                                              unsigned char locking_range, uint64_t range_start, uint64_t range_length,
                                               char read_lock_enabled, char write_lock_enabled, char read_locked,
                                               char write_locked)
 {
@@ -25,24 +25,24 @@ static int generate_locking_range_set_command(struct disk_device *dev, unsigned 
         tiny_atom(buffer, i, 0, 1);
         start_list(buffer, i);
         {
-            if (range_start != UINT16_MAX) {
-                unsigned char tmp[] = "\x00\x00";
-                hex_add(tmp, 2, range_start);
-                LOG(INFO, "range_start = %i (%02x%02x)\n", range_start, tmp[0], tmp[1]);
+            if (range_start != UINT64_MAX) {
+                unsigned char tmp[] = "\x00\x00\x00\x00\x00\x00\x00\x00";
+                hex_add(tmp, 8, range_start);
+                LOG(INFO, "range_start = %" PRIu64 " (%02x%02x%02x%02x%02x%02x%02x%02x)\n", range_start, tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], tmp[5], tmp[6], tmp[7]);
 
                 start_name(buffer, i);
                 tiny_atom(buffer, i, 0, LOCKING_RANGE_COLUMN_RANGE_START);
-                short_atom(buffer, i, 0, 0, tmp, 2);
+                short_atom(buffer, i, 0, 0, tmp, 8);
                 end_name(buffer, i);
             }
-            if (range_length != UINT16_MAX) {
-                unsigned char tmp[] = "\x00\x00";
-                hex_add(tmp, 2, range_length);
-                LOG(INFO, "range_length = %i (%02x%02x)\n", range_length, tmp[0], tmp[1]);
+            if (range_length != UINT64_MAX) {
+                unsigned char tmp[] = "\x00\x00\x00\x00\x00\x00\x00\x00";
+                hex_add(tmp, 8, range_length);
+                LOG(INFO, "range_length = %" PRIu64 " (%02x%02x%02x%02x%02x%02x%02x%02x)\n", range_length, tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], tmp[5], tmp[6], tmp[7]);
 
                 start_name(buffer, i);
-                tiny_atom(buffer, i, 0, LOCKING_RANGE_COLUMN_RANGE_END);
-                short_atom(buffer, i, 0, 0, tmp, 2);
+                tiny_atom(buffer, i, 0, LOCKING_RANGE_COLUMN_RANGE_LENGTH);
+                short_atom(buffer, i, 0, 0, tmp, 8);
                 end_name(buffer, i);
             }
             if (read_lock_enabled != -1) {
@@ -115,7 +115,7 @@ int unlock_range(struct disk_device *dev, unsigned char locking_range, size_t us
 }
 
 int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned char *challenge,
-                size_t challenge_len, uint16_t start, uint16_t length, size_t users[], size_t users_len)
+                size_t challenge_len, uint64_t start, uint64_t length, size_t users[], size_t users_len)
 {
     int err = 0;
 
@@ -231,7 +231,7 @@ int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *c
         close_session(dev);
         return err;
     }
-    if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_RANGE_END, &length))) {
+    if ((err = get_row_int(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_RANGE_LENGTH, &length))) {
         LOG(ERROR, "Failed to read Locking Range %u length.\n", locking_range);
         close_session(dev);
         return err;

@@ -104,8 +104,8 @@ struct Arguments {
     size_t verify_pin_len;
     unsigned char assign_pin[512];
     size_t assign_pin_len;
-    uint16_t locking_range_start;
-    uint16_t locking_range_length;
+    uint64_t locking_range_start;
+    uint64_t locking_range_length;
     int8_t read_lock_enabled;
     int8_t write_lock_enabled;
     int8_t read_locked;
@@ -241,10 +241,10 @@ static error_t parse_opt_child(int key, char *arg, struct argp_state *state)
         args->locking_range = strtol(arg, NULL, 10);
         break;
     case ARG_KEY_LOCKING_RANGE_START:
-        args->locking_range_start = strtol(arg, NULL, 10);
+        args->locking_range_start = strtoull(arg, NULL, 10);
         break;
     case ARG_KEY_LOCKING_RANGE_LENGTH:
-        args->locking_range_length = strtol(arg, NULL, 10);
+        args->locking_range_length = strtoull(arg, NULL, 10);
         break;
     case ARG_KEY_VERIFY_PIN:
         return parse_opt_hex(arg, args->verify_pin, &args->verify_pin_len);
