@@ -804,7 +804,7 @@ static int print_discovery(struct disk_device *dev, int selection)
 
     printf("{\n");
 
-    if ((selection == SELECT_EVERYTHING) | (selection == SELECT_METAINFORMATION)) {
+    if ((selection == SELECT_EVERYTHING) || (selection == SELECT_METAINFORMATION)) {
         print_comma_start(&first);
         printf("\"Metadata\": {\n"
                "  \"Version\": \"%i\"\n"
@@ -812,7 +812,7 @@ static int print_discovery(struct disk_device *dev, int selection)
                TOOL_VERSION);
     }
 
-    if ((selection == SELECT_EVERYTHING) | (selection == SELECT_IDENTIFY)) {
+    if ((selection == SELECT_EVERYTHING) || (selection == SELECT_IDENTIFY)) {
         print_comma_start(&first);
         printf("\"Identify\": {\n");
         if (dev->type == NVME) {
@@ -823,7 +823,7 @@ static int print_discovery(struct disk_device *dev, int selection)
         printf("}");
     }
 
-    if ((selection == SELECT_EVERYTHING) | (selection == SELECT_DISCOVERY_0)) {
+    if ((selection == SELECT_EVERYTHING) || (selection == SELECT_DISCOVERY_0)) {
         print_comma_start(&first);
         printf("\"Discovery 0\": {\n");
         err = do_level_0_discovery(dev);
@@ -833,21 +833,21 @@ static int print_discovery(struct disk_device *dev, int selection)
         printf("}");
     }
 
-    if ((selection == SELECT_EVERYTHING) | (selection == SELECT_DISCOVERY_1)) {
+    if ((selection == SELECT_EVERYTHING) || (selection == SELECT_DISCOVERY_1)) {
         print_comma_start(&first);
         printf("\"Discovery 1\": {\n");
         err = print_properties(dev);
         printf("}");
     }
 
-    if ((selection == SELECT_EVERYTHING) | (selection == SELECT_DISCOVERY_2)) {
+    if ((selection == SELECT_EVERYTHING) || (selection == SELECT_DISCOVERY_2)) {
         print_comma_start(&first);
         printf("\"Discovery 2\": {\n");
         err = crawl_tper(dev);
         printf("}");
     }
 
-    if ((selection == SELECT_EVERYTHING) | (selection == SELECT_DISCOVERY_2_EXTRA)) {
+    if ((selection == SELECT_EVERYTHING) || (selection == SELECT_DISCOVERY_2_EXTRA)) {
         const unsigned char *manual_discovery_list[] = {
             TABLE_TPER_INFO_OBJ_UID,
             DATA_REMOVAL_MECHANISM_OBJ_UID,
@@ -870,7 +870,7 @@ static int print_discovery(struct disk_device *dev, int selection)
         printf("}");
     }
 
-    if (((selection == SELECT_EVERYTHING)) | ((selection == SELECT_RNG))) {
+    if (((selection == SELECT_EVERYTHING)) || ((selection == SELECT_RNG))) {
         print_comma_start(&first);
         printf("\"Random sample\": [\n");
         for (int i = 0; i < 4; ++i) {
