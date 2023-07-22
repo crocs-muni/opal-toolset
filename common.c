@@ -212,8 +212,9 @@ static void log_packet_data(const unsigned char *response)
     LOG_C(EVERYTHING, "\n");
 }
 
-int nvme_security_command(int fd, uint8_t *buffer, size_t buffer_len, enum TrustedCommandDirection direction,
-                          int protocol, int comID)
+static int nvme_security_command(int fd, uint8_t *buffer, size_t buffer_len,
+                                 enum TrustedCommandDirection direction,
+                                 int protocol, int comID)
 {
     int err = 0;
 
@@ -241,8 +242,9 @@ int nvme_security_command(int fd, uint8_t *buffer, size_t buffer_len, enum Trust
     return err;
 }
 
-int scsi_send_cdb(int fd, uint8_t *cdb, size_t cdb_len, uint8_t *response, size_t response_len,
-                  enum TrustedCommandDirection direction)
+static int scsi_send_cdb(int fd, uint8_t *cdb, size_t cdb_len,
+                         uint8_t *response, size_t response_len,
+                         enum TrustedCommandDirection direction)
 {
     int err = 0;
 
@@ -280,8 +282,9 @@ int scsi_send_cdb(int fd, uint8_t *cdb, size_t cdb_len, uint8_t *response, size_
     return err;
 }
 
-int ata_trusted_command(int fd, uint8_t *response, size_t response_len, enum TrustedCommandDirection direction,
-                        int protocol, int sp_specific)
+static int ata_trusted_command(int fd, uint8_t *response, size_t response_len,
+                               enum TrustedCommandDirection direction,
+                               int protocol, int sp_specific)
 {
     // ACS-3
     struct sg_cdb_ata_pass_through_12 cdb = {
@@ -302,8 +305,9 @@ int ata_trusted_command(int fd, uint8_t *response, size_t response_len, enum Tru
 #define SCSI_SECURITY_PROTOCOL_IN 0xa2
 #define SCSI_SECURITY_PROTOCOL_OUT 0xb5
 
-int scsi_security_protocol(int fd, uint8_t *response, size_t response_len, enum TrustedCommandDirection direction,
-                           int protocol, int protocol_specific)
+static int scsi_security_protocol(int fd, uint8_t *response, size_t response_len,
+                                  enum TrustedCommandDirection direction,
+                                  int protocol, int protocol_specific)
 {
     struct scsi_security_protocol {
         uint8_t operation_code;
