@@ -6,7 +6,7 @@
 static void print_usage(char *prog_name)
 {
     fprintf(stderr,
-            "Usage: %s <device> [bytes [repeats [log_level]]]\n"
+            "Usage: %s <device> [bytes [repeats [log_level]]] [--scsi]\n"
             "\n"
             "Bytes are acquired in chunks of 32 bytes.\n"
             "Each repeat is a separate session.\n",
@@ -20,6 +20,12 @@ int main(int argc, char **argv)
     const char *dev_file = NULL;
     int req_repeats = 1;
     int req_bytes = 32;
+    bool use_scsi_sec = false;
+
+    if (argc > 2 && !strcmp(argv[argc - 1], "--scsi")) {
+        use_scsi_sec = true;
+        argc--;
+    }
 
     switch (argc) {
     case 5:
@@ -51,7 +57,7 @@ int main(int argc, char **argv)
     }
 
     struct disk_device dev = { 0 };
-    if ((err = disk_device_open(&dev, dev_file))) {
+    if ((err = disk_device_open(&dev, dev_file, use_scsi_sec))) {
         return err;
     }
 

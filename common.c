@@ -333,15 +333,13 @@ static int scsi_security_protocol(int fd, uint8_t *response, size_t response_len
 int trusted_command(struct disk_device *dev, uint8_t *msg, size_t msg_len, enum TrustedCommandDirection direction,
                     int protocol, int comID)
 {
-    if (dev->type == NVME) {
+    if (dev->type == NVME)
         return nvme_security_command(dev->fd, msg, msg_len, direction, protocol, comID);
-    } else if (dev->type == SATA) {
-        if (libata_allow_tpm) {
-            return ata_trusted_command(dev->fd, msg, msg_len, direction, protocol, comID);
-        } else {
+    else if (dev->type == SATA)
+        return ata_trusted_command(dev->fd, msg, msg_len, direction, protocol, comID);
+    else if (dev->type == SCSI)
             return scsi_security_protocol(dev->fd, msg, msg_len, direction, protocol, comID);
-        }
-    } else {
+    else {
         LOG(ERROR, "Unsupported device interface.\n");
         return 1;
     }
@@ -1071,33 +1069,21 @@ cleanup:
     return err;
 }
 
-unsigned char libata_allow_tpm = 0;
-void get_allow_tpm_status()
-{
-    int fd = open("/sys/module/libata/parameters/allow_tpm", O_RDONLY);
-
-    unsigned char status = 0;
-    read(fd, &status, 1);
-
-    if (status == '1') {
-        libata_allow_tpm = 1;
-    } else {
-        libata_allow_tpm = 0;
-        LOG(ERROR, "Parameter 'libata.allow_tpm' is not enabled. Using scsi workaround.\n"
-                   "In case it does not work set 'libata.allow_tpm = 1' to allow ATA trusted commands.\n");
-    }
-    close(fd);
-}
-
-int disk_device_open(struct disk_device *dev, const char *file)
+int disk_device_open(struct disk_device *dev, const char *file, bool use_scsi_sec)
 {
     memset(dev, 0, sizeof(struct disk_device));
-    dev->type = strncmp(file, "/dev/nvme", 9) == 0 ? NVME : SATA;
+
+    if (!strncmp(file, "/dev/nvme", 9))
+        dev->type = NVME;
+    else if (use_scsi_sec)
+        dev->type = SCSI;
+    else
+        dev->type = SATA;
+
     if ((dev->fd = open(file, O_RDWR)) == -1) {
         LOG(ERROR, "Cannot open file '%s': %s\n", file, strerror(errno));
         return 1;
     }
-    get_allow_tpm_status();
 
     return 0;
 }

@@ -24,7 +24,8 @@ enum ArgKey {
     ARG_KEY_WRITE_LOCK_ENABLED = 3,
     ARG_KEY_READ_LOCKED = 4,
     ARG_KEY_WRITE_LOCKED = 5,
-    ARG_KEY_VERBOSE = 'V'
+    ARG_KEY_VERBOSE = 'V',
+    ARG_KEY_SCSI = 'S'
 };
 
 static struct argp_option options_setup_range[] = {
@@ -81,7 +82,11 @@ static struct argp_option options_reset[] = {
     { 0 }
 };
 
-static struct argp_option options_main[] = { { "verbose", ARG_KEY_VERBOSE, NULL, 0, NULL, 0 }, { 0 } };
+static struct argp_option options_main[] = {
+    { "verbose", ARG_KEY_VERBOSE, NULL, 0, NULL, 0 },
+    { "scsi", ARG_KEY_SCSI, NULL, 0, "Use SCSI security protocol command", 0 },
+    { 0 }
+};
 
 struct Arguments {
     enum {
@@ -97,6 +102,7 @@ struct Arguments {
     } command;
 
     char *device;
+    bool use_scsi_sec;
     uint16_t locking_range;
     size_t user[32];
     size_t user_count;
@@ -186,6 +192,9 @@ static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
         break;
     case ARG_KEY_VERBOSE:
         current_log_level = current_log_level == EVERYTHING ? EVERYTHING : current_log_level + 1;
+        break;
+    case ARG_KEY_SCSI:
+        arguments->use_scsi_sec = true;
         break;
     case ARGP_KEY_ARG:
         switch (arguments->parsed) {
@@ -301,7 +310,7 @@ int main(int argc, char **argv)
     }
 
     struct disk_device dev = { 0 };
-    if ((err = disk_device_open(&dev, args.device))) {
+    if ((err = disk_device_open(&dev, args.device, args.use_scsi_sec))) {
         return err;
     }
 

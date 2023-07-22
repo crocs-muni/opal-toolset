@@ -18,6 +18,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 enum log_level {
     ERROR,
@@ -378,6 +379,7 @@ struct disk_device {
     enum disk_device_type {
         NVME,
         SATA,
+        SCSI,
     } type;
 
     uint16_t base_com_id;
@@ -399,9 +401,8 @@ struct disk_device {
         size_t unknown_len;
     } features;
 };
-int disk_device_open(struct disk_device *dev, const char *file);
+int disk_device_open(struct disk_device *dev, const char *file, bool use_scsi_sec);
 void disk_device_close(struct disk_device *dev);
-extern unsigned char libata_allow_tpm;
 
 uint64_t swap_endian_64(uint64_t value);
 uint32_t swap_endian_32(uint32_t value);

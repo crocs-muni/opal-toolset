@@ -817,7 +817,7 @@ static int print_discovery(struct disk_device *dev, int selection)
         printf("\"Identify\": {\n");
         if (dev->type == NVME) {
             err = print_nvme_identify(dev->fd);
-        } else if (dev->type == SATA) {
+        } else {
             err = print_ata_identify(dev->fd);
         }
         printf("}");
@@ -900,7 +900,7 @@ static int print_discovery(struct disk_device *dev, int selection)
 static void print_usage(char *prog_name)
 {
     fprintf(stderr,
-            "Usage: %s <device> [selection [log_level]]\n"
+            "Usage: %s <device> [selection [log_level]] [--scsi]\n"
             "\n"
             "selection: 0=everything,\n"
             "           1=metainformation,\n"
@@ -913,6 +913,7 @@ static void print_usage(char *prog_name)
             "log:       0=error,\n"
             "           1=info,\n"
             "           2=everything\n"
+            "--scsi:    use SCSI security protocol command\n"
             "\n",
             prog_name);
     exit(1);
@@ -923,6 +924,12 @@ int main(int argc, char **argv)
     int err = 0;
     const char *dev_file = NULL;
     int selection = 0;
+    bool use_scsi_sec = false;
+
+    if (argc > 2 && !strcmp(argv[argc - 1], "--scsi")) {
+        use_scsi_sec = true;
+        argc--;
+    }
 
     switch (argc) {
     case 4:
@@ -948,7 +955,7 @@ int main(int argc, char **argv)
     }
 
     struct disk_device dev = { 0 };
-    if ((err = disk_device_open(&dev, dev_file))) {
+    if ((err = disk_device_open(&dev, dev_file, use_scsi_sec))) {
         return err;
     }
 
