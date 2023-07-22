@@ -1,6 +1,6 @@
 all: rng discovery control
 
-CFLAGS=
+CFLAGS=-g -O0
 
 # utils
 rng: common.o utils.o rng.c
