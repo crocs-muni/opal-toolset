@@ -302,24 +302,11 @@ static int ata_trusted_command(int fd, uint8_t *response, size_t response_len,
     return scsi_send_cdb(fd, (uint8_t *)&cdb, sizeof(cdb), response, response_len, direction);
 }
 
-#define SCSI_SECURITY_PROTOCOL_IN 0xa2
-#define SCSI_SECURITY_PROTOCOL_OUT 0xb5
-
 static int scsi_security_protocol(int fd, uint8_t *response, size_t response_len,
                                   enum TrustedCommandDirection direction,
                                   int protocol, int protocol_specific)
 {
-    struct scsi_security_protocol {
-        uint8_t operation_code;
-        uint8_t security_protocol;
-        uint16_t security_protocol_specific;
-        uint8_t reserved_1 : 7;
-        uint8_t inc_512 : 1;
-        uint8_t reserved_2;
-        uint32_t allocation_length;
-        uint8_t reserved_3;
-        uint8_t control;
-    } cdb = {
+    struct scsi_security_protocol cdb = {
         .operation_code = direction == IF_RECV ? SCSI_SECURITY_PROTOCOL_IN : SCSI_SECURITY_PROTOCOL_OUT,
         .security_protocol = protocol,
         .security_protocol_specific = swap_endian_16(protocol_specific),

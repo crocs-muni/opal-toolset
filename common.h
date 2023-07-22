@@ -136,6 +136,21 @@ struct sg_cdb_ata_pass_through_12 {
     uint8_t control;
 }  __attribute__ ((packed));
 
+#define SCSI_SECURITY_PROTOCOL_IN  0xa2
+#define SCSI_SECURITY_PROTOCOL_OUT 0xb5
+
+struct scsi_security_protocol {
+    uint8_t operation_code;
+    uint8_t security_protocol;
+    uint16_t security_protocol_specific;
+    uint8_t reserved_1 : 7;
+    uint8_t inc_512 : 1;
+    uint8_t reserved_2;
+    uint32_t allocation_length;
+    uint8_t reserved_3;
+    uint8_t control;
+}  __attribute__ ((packed));
+
 int hex_add(unsigned char *a, size_t a_len, size_t b);
 
 #define VAL_UNDEFINED (-1)
