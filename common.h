@@ -41,8 +41,6 @@ extern enum log_level current_log_level;
         }                                                                                                              \
     }
 
-#pragma pack(1)
-
 struct com_packet {
     uint8_t reserved_1[4];
     uint16_t comid;
@@ -50,7 +48,7 @@ struct com_packet {
     uint32_t outstanding_data;
     uint32_t min_transfer;
     uint32_t length;
-};
+}  __attribute__ ((packed));
 
 struct packet {
     uint64_t session;
@@ -59,19 +57,19 @@ struct packet {
     uint16_t ack_type;
     uint32_t ack;
     uint32_t length;
-};
+}  __attribute__ ((packed));
 
 struct data_subpacket {
     uint8_t reserved_1[6];
     uint16_t kind;
     uint32_t length;
-};
+}  __attribute__ ((packed));
 
 struct packet_headers {
     struct com_packet com_packet;
     struct packet packet;
     struct data_subpacket data_subpacket;
-};
+}  __attribute__ ((packed));
 
 #define START_LIST_TOKEN 0xf0
 #define END_LIST_TOKEN 0xf1
@@ -119,7 +117,7 @@ struct sg_cdb_ata_pass_through_12 {
             uint8_t lba_high;
             uint8_t device;
             uint8_t command;
-        } original;
+        } __attribute__ ((packed)) original;
         // ACS-3
         struct {
             uint8_t security_protocol;
@@ -131,13 +129,11 @@ struct sg_cdb_ata_pass_through_12 {
             uint8_t na : 1;
             uint8_t obsolete_2 : 1;
             uint8_t command;
-        } trusted_receive;
+        } __attribute__ ((packed)) trusted_receive;
     };
     uint8_t reserved_3;
     uint8_t control;
-};
-
-#pragma pack()
+}  __attribute__ ((packed));
 
 int hex_add(unsigned char *a, size_t a_len, size_t b);
 
@@ -244,8 +240,6 @@ enum MethodStatusCode {
 };
 const char *error_to_string(enum MethodStatusCode msc);
 
-#pragma pack(1)
-
 struct nvme_identify_controller_data {
     uint8_t vid[2];
     uint8_t ssvid[2];
@@ -253,21 +247,21 @@ struct nvme_identify_controller_data {
     uint8_t model_number[40];
     uint8_t firmware_revision[8];
     uint8_t _filler[184];
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_header {
     uint32_t length;
     uint32_t revision;
     u_int8_t reserved[8];
     u_int8_t vendor_specific[32];
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_feature_shared {
     uint16_t feature_code;
     uint8_t reserved : 4;
     uint8_t descriptor_version : 4;
     uint8_t length;
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_tper_feature {
     struct level_0_discovery_feature_shared shared;
@@ -280,7 +274,7 @@ struct level_0_discovery_tper_feature {
     uint8_t comID_mgmt_supported : 1;
     uint8_t reserved_3 : 1;
     uint8_t reserved_4[11];
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_geometry_feature {
     struct level_0_discovery_feature_shared shared;
@@ -290,7 +284,7 @@ struct level_0_discovery_geometry_feature {
     uint32_t logical_block_size;
     uint64_t alignment_granularity;
     uint64_t lowest_alignment_LBA;
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_lockin_feature {
     struct level_0_discovery_feature_shared shared;
@@ -303,7 +297,7 @@ struct level_0_discovery_lockin_feature {
     uint8_t hw_reset_for_lor_dor_supported : 1;
     uint8_t mbr_shadowing_not_supported : 1;
     uint8_t reserved_3[11];
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_opal_2_feature {
     struct level_0_discovery_feature_shared shared;
@@ -316,7 +310,7 @@ struct level_0_discovery_opal_2_feature {
     uint8_t initial_pin_indicator;
     uint8_t behavior_of_pin_upon_revert;
     uint8_t reserved_2[5];
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_opal_1_feature {
     struct level_0_discovery_feature_shared shared;
@@ -325,7 +319,7 @@ struct level_0_discovery_opal_1_feature {
     uint8_t range_crossing : 1;
     uint8_t reserved_1 : 7;
     uint8_t reserved_2[11];
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_single_user_mode_feature {
     struct level_0_discovery_feature_shared shared;
@@ -335,7 +329,7 @@ struct level_0_discovery_single_user_mode_feature {
     uint8_t policy : 1;
     uint8_t reserved_1 : 5;
     uint8_t reserved_2[7];
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_data_store_feature {
     struct level_0_discovery_feature_shared shared;
@@ -343,7 +337,7 @@ struct level_0_discovery_data_store_feature {
     uint16_t maximum_number_of_tables;
     uint32_t maximum_total_size_of_tables;
     uint32_t table_size_alignment;
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_block_sid_authentication_feature {
     struct level_0_discovery_feature_shared shared;
@@ -355,7 +349,7 @@ struct level_0_discovery_block_sid_authentication_feature {
     uint8_t hardware_reset : 1;
     uint8_t reserved_2 : 7;
     uint8_t reserved_3;
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_pyrite_feature {
     struct level_0_discovery_feature_shared shared;
@@ -365,7 +359,7 @@ struct level_0_discovery_pyrite_feature {
     uint8_t initial_pin_indicator;
     uint8_t behavior_of_pin_upon_revert;
     uint8_t reserved_2[5];
-};
+}  __attribute__ ((packed));
 
 struct level_0_discovery_supported_data_removal_mechanism_feature {
     struct level_0_discovery_feature_shared shared;
@@ -376,9 +370,7 @@ struct level_0_discovery_supported_data_removal_mechanism_feature {
     uint8_t data_removal_time_format;
     uint16_t data_removal_time_for_supported_data_removal_mechanism[6];
     uint8_t reserved_3[16];
-};
-
-#pragma pack()
+}  __attribute__ ((packed));
 
 #define DISK_DEVICE_UNKNOWN_FEATURE_MAX_LENGTH 1024
 struct disk_device {
