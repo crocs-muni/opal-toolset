@@ -77,23 +77,6 @@ const char *error_to_string(enum MethodStatusCode msc)
     }
 }
 
-uint64_t swap_endian_64(uint64_t x)
-{
-    return ((x & 0x00000000000000ff) << 56) | ((x & 0x000000000000ff00) << 40) | ((x & 0x0000000000ff0000) << 24) |
-           ((x & 0x00000000ff000000) << 8) | ((x & 0x000000ff00000000) >> 8) | ((x & 0x0000ff0000000000) >> 24) |
-           ((x & 0x00ff000000000000) >> 40) | ((x & 0xff00000000000000) >> 56);
-}
-
-uint32_t swap_endian_32(uint32_t x)
-{
-    return ((x & 0x000000ff) << 24) | ((x & 0x0000ff00) << 8) | ((x & 0x00ff0000) >> 8) | ((x & 0xff000000) >> 24);
-}
-
-uint16_t swap_endian_16(uint16_t x)
-{
-    return ((x & 0x00ff) << 8) | ((x & 0xff00) >> 8);
-}
-
 int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, int feature_code)
 {
     int err = 0;
@@ -110,8 +93,7 @@ int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, int fea
     } else if (feature_code == 0x0203) {
         struct level_0_discovery_opal_2_feature *body = data;
         dev->features.opal2 = *body;
-
-        dev->base_com_id = swap_endian_16(body->base_comID);
+        dev->base_com_id = be16_to_cpu(body->base_comID);
     } else if (feature_code == 0x0200) {
         struct level_0_discovery_opal_1_feature *body = data;
         dev->features.opal1 = *body;
@@ -124,8 +106,7 @@ int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, int fea
     } else if (feature_code == 0x0303) {
         struct level_0_discovery_pyrite_feature *body = data;
         dev->features.pyrite = *body;
-
-        dev->base_com_id = swap_endian_16(body->base_comID);
+        dev->base_com_id = be16_to_cpu(body->base_comID);
     } else if (feature_code == 0x0402) {
         struct level_0_discovery_block_sid_authentication_feature *body = data;
         dev->features.block_sid_authentication = *body;
@@ -152,12 +133,12 @@ int tcg_discovery_0_process_response(struct disk_device *dev, void *data)
 
     struct level_0_discovery_header *header = data;
     uint32_t offset = sizeof(struct level_0_discovery_header);
-    uint32_t total_length = swap_endian_32(header->length);
+    uint32_t total_length = be32_to_cpu(header->length);
 
     while (offset < total_length) {
         struct level_0_discovery_feature_shared *body =
                 (struct level_0_discovery_feature_shared *)((unsigned char *)data + offset);
-        uint16_t feature_code = swap_endian_16(body->feature_code);
+        uint16_t feature_code = be16_to_cpu(body->feature_code);
 
         if ((err = tcg_discovery_0_process_feature(dev, body, feature_code))) {
             return err;
@@ -309,9 +290,9 @@ static int scsi_security_protocol(int fd, uint8_t *response, size_t response_len
     struct scsi_security_protocol cdb = {
         .operation_code = direction == IF_RECV ? SCSI_SECURITY_PROTOCOL_IN : SCSI_SECURITY_PROTOCOL_OUT,
         .security_protocol = protocol,
-        .security_protocol_specific = swap_endian_16(protocol_specific),
+        .security_protocol_specific = cpu_to_be16(protocol_specific),
         .inc_512 = 1,
-        .allocation_length = swap_endian_32(response_len / 512),
+        .allocation_length = cpu_to_be32(response_len / 512),
     };
 
     return scsi_send_cdb(fd, (uint8_t *)&cdb, sizeof(cdb), response, response_len, direction);
@@ -441,7 +422,7 @@ int process_method_response(const unsigned char *buffer, size_t buffer_len)
 
     struct packet_headers *headers = (struct packet_headers *)buffer;
     const unsigned char *data = buffer + sizeof(struct packet_headers);
-    size_t data_length = swap_endian_32(headers->data_subpacket.length);
+    size_t data_length = be32_to_cpu(headers->data_subpacket.length);
 
     if (buffer_len < sizeof(struct packet_headers) + data_length) {
         LOG(ERROR, "Buffer was not large enough for the response.\n");
@@ -535,7 +516,7 @@ void prepare_headers(unsigned char *buffer, size_t *i, struct disk_device *dev)
 {
     struct packet_headers *headers = (void *)(unsigned char *)buffer;
 
-    headers->com_packet.comid = swap_endian_16(dev->base_com_id);
+    headers->com_packet.comid = cpu_to_be16(dev->base_com_id);
     headers->packet.session = dev->sp_session_id | (uint64_t)dev->host_session_id << 32;
 
     *i += sizeof(struct packet_headers);
@@ -557,13 +538,13 @@ void finish_headers(unsigned char *buffer, size_t *i)
     struct packet_headers *headers = (void *)(((unsigned char *)buffer));
 
     // Data subpacket does not want aligned length.
-    headers->data_subpacket.length = swap_endian_32(*i - sizeof(struct packet_headers));
+    headers->data_subpacket.length = cpu_to_be32(*i - sizeof(struct packet_headers));
 
     if ((*i % 4) != 0)
         *i += 4 - (*i % 4);
 
-    headers->com_packet.length = swap_endian_32(*i - sizeof(struct com_packet));
-    headers->packet.length = swap_endian_32(swap_endian_32(headers->com_packet.length) - sizeof(struct packet));
+    headers->com_packet.length = cpu_to_be32(*i - sizeof(struct com_packet));
+    headers->packet.length = cpu_to_be32(be32_to_cpu(headers->com_packet.length) - sizeof(struct packet));
 
     if ((*i % PADDING_ALIGNMENT) != 0)
         *i += PADDING_ALIGNMENT - (*i % PADDING_ALIGNMENT);
@@ -697,8 +678,8 @@ int start_session(struct disk_device *dev, const unsigned char *SPID, size_t use
     if ((err = skip_to_parameter(buffer, &i, 0, 0))) {
         return err;
     }
-    dev->host_session_id = swap_endian_32(parse_int(buffer, &i));
-    dev->sp_session_id = swap_endian_32(parse_int(buffer, &i));
+    dev->host_session_id = be32_to_cpu(parse_int(buffer, &i));
+    dev->sp_session_id = be32_to_cpu(parse_int(buffer, &i));
     LOG(INFO, "Created session with HostSessionID 0x%x and SPSessionID 0x%x.\n", 
         dev->host_session_id, dev->sp_session_id);
 
@@ -838,7 +819,7 @@ int skip_atom(const unsigned char *src, size_t *offset, size_t total_length)
 int skip_to_parameter(unsigned char *src, size_t *offset, int parameter, int skip_mandatory)
 {
     struct packet_headers *headers = (struct packet_headers *)src;
-    size_t len = swap_endian_32(headers->data_subpacket.length) + sizeof(struct packet_headers);
+    size_t len = be32_to_cpu(headers->data_subpacket.length) + sizeof(struct packet_headers);
     *offset = sizeof(struct packet_headers);
     if (src[*offset] == START_LIST_TOKEN) {
         *offset += 1;

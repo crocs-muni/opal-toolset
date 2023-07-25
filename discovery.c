@@ -92,8 +92,8 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"AlignmentGranularity\": %li,\n"
                "    \"LowestAlignedLBA\": %li\n"
                "  }",
-               body->shared.descriptor_version, body->align, swap_endian_32(body->logical_block_size),
-               swap_endian_64(body->alignment_granularity), swap_endian_64(body->lowest_alignment_LBA));
+               body->shared.descriptor_version, body->align, be32_to_cpu(body->logical_block_size),
+               be64_to_cpu(body->alignment_granularity), be64_to_cpu(body->lowest_alignment_LBA));
     }
 
     if (dev->features.opal2.shared.feature_code) {
@@ -111,10 +111,10 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"Initial C_PIN_SID PIN Indicator\": %i,\n"
                "    \"Behavior of C_PIN_SID PIN upon TPer Revert\": %i\n"
                "  }",
-               body->shared.descriptor_version, body->shared.reserved, swap_endian_16(body->base_comID),
-               swap_endian_16(body->number_of_comIDs), body->range_crossing_behaviour,
-               swap_endian_16(body->number_of_locking_admin_authorities_supported),
-               swap_endian_16(body->number_of_locking_user_authorities_supported), body->initial_pin_indicator,
+               body->shared.descriptor_version, body->shared.reserved, be16_to_cpu(body->base_comID),
+               be16_to_cpu(body->number_of_comIDs), body->range_crossing_behaviour,
+               be16_to_cpu(body->number_of_locking_admin_authorities_supported),
+               be16_to_cpu(body->number_of_locking_user_authorities_supported), body->initial_pin_indicator,
                body->behavior_of_pin_upon_revert);
     }
 
@@ -128,8 +128,8 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"Number of ComIDs\": %i,\n"
                "    \"Range Crossing\": %i\n"
                "  }",
-               body->shared.descriptor_version, swap_endian_16(body->base_comID),
-               swap_endian_16(body->number_of_comIDs), body->range_crossing);
+               body->shared.descriptor_version, be16_to_cpu(body->base_comID),
+               be16_to_cpu(body->number_of_comIDs), body->range_crossing);
     } else if (dev->features.single_user_mode.shared.feature_code) {
         struct level_0_discovery_single_user_mode_feature *body = &dev->features.single_user_mode;
 
@@ -141,7 +141,7 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"All\": %i,\n"
                "    \"Any\": %i\n"
                "  }",
-               body->shared.descriptor_version, swap_endian_32(body->number_of_locking_objects_supported), body->policy,
+               body->shared.descriptor_version, be32_to_cpu(body->number_of_locking_objects_supported), body->policy,
                body->all, body->any);
     }
 
@@ -155,8 +155,8 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"Maximum total size of DataStore tables\": %i,\n"
                "    \"DataStore table size alignment\": %i\n"
                "  }",
-               body->shared.descriptor_version, swap_endian_16(body->maximum_number_of_tables),
-               swap_endian_32(body->maximum_total_size_of_tables), swap_endian_32(body->table_size_alignment));
+               body->shared.descriptor_version, be16_to_cpu(body->maximum_number_of_tables),
+               be32_to_cpu(body->maximum_total_size_of_tables), be32_to_cpu(body->table_size_alignment));
     }
 
     if (dev->features.block_sid_authentication.shared.feature_code) {
@@ -187,8 +187,8 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"Initial C_PIN_SID PIN Indicator\": %i,\n"
                "    \"Behavior of C_PIN_SID PIN upon TPer Revert\": %i\n"
                "  }",
-               body->shared.descriptor_version, swap_endian_16(body->base_comID),
-               swap_endian_16(body->number_of_comIDs), body->initial_pin_indicator, body->behavior_of_pin_upon_revert);
+               body->shared.descriptor_version, be16_to_cpu(body->base_comID),
+               be16_to_cpu(body->number_of_comIDs), body->initial_pin_indicator, body->behavior_of_pin_upon_revert);
     }
 
     if (dev->features.supported_data_removal_mechanism.shared.feature_code) {
@@ -218,12 +218,12 @@ static void print_level_0_discovery(struct disk_device *dev)
                !!(body->data_removal_time_format & (1 << 0)), !!(body->data_removal_time_format & (1 << 1)),
                !!(body->data_removal_time_format & (1 << 2)), !!(body->data_removal_time_format & (1 << 3)),
                !!(body->data_removal_time_format & (1 << 4)), !!(body->data_removal_time_format & (1 << 5)),
-               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[0]),
-               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[1]),
-               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[2]),
-               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[3]),
-               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[4]),
-               swap_endian_16(body->data_removal_time_for_supported_data_removal_mechanism[5]));
+               be16_to_cpu(body->data_removal_time_for_supported_data_removal_mechanism[0]),
+               be16_to_cpu(body->data_removal_time_for_supported_data_removal_mechanism[1]),
+               be16_to_cpu(body->data_removal_time_for_supported_data_removal_mechanism[2]),
+               be16_to_cpu(body->data_removal_time_for_supported_data_removal_mechanism[3]),
+               be16_to_cpu(body->data_removal_time_for_supported_data_removal_mechanism[4]),
+               be16_to_cpu(body->data_removal_time_for_supported_data_removal_mechanism[5]));
     }
 
     for (size_t i = 0; i < dev->features.unknown_len;) {
@@ -596,7 +596,7 @@ static int crawl_table_row(struct disk_device *dev, unsigned char *uidref, crawl
     }
 
     struct packet_headers *header = (struct packet_headers *)response;
-    uint32_t last = swap_endian_32(header->data_subpacket.length);
+    uint32_t last = be32_to_cpu(header->data_subpacket.length);
 
     cb(response + sizeof(struct packet_headers), last, cb_data);
 
@@ -785,7 +785,7 @@ static int print_single_row(struct disk_device *dev, const unsigned char *table_
     }
 
     struct packet_headers *header = (struct packet_headers *)response;
-    uint32_t last = swap_endian_32(header->data_subpacket.length);
+    uint32_t last = be32_to_cpu(header->data_subpacket.length);
 
     crawl_cb_print_row(response + sizeof(struct packet_headers), last, NULL);
 

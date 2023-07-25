@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include "bitops.h"
 
 enum log_level {
     ERROR,
@@ -418,10 +419,6 @@ struct disk_device {
 };
 int disk_device_open(struct disk_device *dev, const char *file, bool use_scsi_sec);
 void disk_device_close(struct disk_device *dev);
-
-uint64_t swap_endian_64(uint64_t value);
-uint32_t swap_endian_32(uint32_t value);
-uint16_t swap_endian_16(uint16_t value);
 
 /**
  * Functions for writing tokens into buffer.
