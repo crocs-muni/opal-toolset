@@ -108,7 +108,7 @@ struct sg_cdb_ata_pass_through_12 {
     uint8_t t_dir : 1;
     uint8_t reserved_2 : 1;
     uint8_t ck_cond : 1;
-    uint8_t off_line : 1;
+    uint8_t off_line : 2;
     union {
         struct {
             uint8_t features;
