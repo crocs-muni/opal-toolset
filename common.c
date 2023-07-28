@@ -274,9 +274,9 @@ static int ata_trusted_command(int fd, uint8_t *response, size_t response_len,
         .t_dir = direction == IF_RECV ? ATA_PASS_THROUGH_RECEIVE : ATA_PASS_THROUGH_SEND,
         .byt_blok = 1,
         .t_length = 2,
-        .trusted_receive.security_protocol = protocol,
-        .trusted_receive.transfer_length = response_len / 512,
-        .trusted_receive.sp_specific = sp_specific,
+        .trusted_receive.security_protocol = protocol & 0xFF,
+        .trusted_receive.transfer_length = cpu_to_le16(response_len / 512),
+        .trusted_receive.sp_specific = cpu_to_le16(sp_specific),
         .trusted_receive.command = direction == IF_RECV ? ATA_TRUSTED_RECEIVE : ATA_TRUSTED_SEND,
     };
 
@@ -291,8 +291,7 @@ static int scsi_security_protocol(int fd, uint8_t *response, size_t response_len
         .operation_code = direction == IF_RECV ? SCSI_SECURITY_PROTOCOL_IN : SCSI_SECURITY_PROTOCOL_OUT,
         .security_protocol = protocol,
         .security_protocol_specific = cpu_to_be16(protocol_specific),
-        .inc_512 = 1,
-        .allocation_length = cpu_to_be32(response_len / 512),
+        .allocation_length = cpu_to_be32(response_len),
     };
 
     return scsi_send_cdb(fd, (uint8_t *)&cdb, sizeof(cdb), response, response_len, direction);
