@@ -21,6 +21,8 @@
 #include <stdbool.h>
 #include "bitops.h"
 
+#define UCHR(x) (const unsigned char*)(x)
+
 enum log_level {
     ERROR,
     INFO,
@@ -164,37 +166,37 @@ enum TrustedCommandDirection {
 #define TCG_LEVEL_0_DISCOVERY_PROTOCOL_ID 0x01
 #define TCG_LEVEL_0_DISCOVERY_COMID 0x0001
 
-#define METHOD_PROPERTIES_UID "\x00\x00\x00\x00\x00\x00\xff\x01"
-#define METHOD_START_SESSION_UID "\x00\x00\x00\x00\x00\x00\xff\x02"
-#define METHOD_CLOSE_SESSION_UID "\x00\x00\x00\x00\x00\x00\xff\x06"
-#define METHOD_NEXT_UID "\x00\x00\x00\x06\x00\x00\x00\x08"
-#define METHOD_GENKEY_UID "\x00\x00\x00\x06\x00\x00\x00\x10"
-#define METHOD_GET_UID "\x00\x00\x00\x06\x00\x00\x00\x16"
+#define METHOD_PROPERTIES_UID UCHR("\x00\x00\x00\x00\x00\x00\xff\x01")
+#define METHOD_START_SESSION_UID UCHR("\x00\x00\x00\x00\x00\x00\xff\x02")
+#define METHOD_CLOSE_SESSION_UID UCHR("\x00\x00\x00\x00\x00\x00\xff\x06")
+#define METHOD_NEXT_UID UCHR("\x00\x00\x00\x06\x00\x00\x00\x08")
+#define METHOD_GENKEY_UID UCHR("\x00\x00\x00\x06\x00\x00\x00\x10")
+#define METHOD_GET_UID UCHR("\x00\x00\x00\x06\x00\x00\x00\x16")
 #define METHOD_GET_PARAMETER_START 3
 #define METHOD_GET_PARAMETER_END 4
-#define METHOD_SET_UID "\x00\x00\x00\x06\x00\x00\x00\x17"
+#define METHOD_SET_UID UCHR("\x00\x00\x00\x06\x00\x00\x00\x17")
 #define METHOD_SET_PARAMETER_VALUES 1
-#define METHOD_REVERT_UID "\x00\x00\x00\x06\x00\x00\x02\x02"
-#define METHOD_ACTIVATE_UID "\x00\x00\x00\x06\x00\x00\x02\x03"
-#define METHOD_RANDOM_UID "\x00\x00\x00\x06\x00\x00\x06\x01"
+#define METHOD_REVERT_UID UCHR("\x00\x00\x00\x06\x00\x00\x02\x02")
+#define METHOD_ACTIVATE_UID UCHR("\x00\x00\x00\x06\x00\x00\x02\x03")
+#define METHOD_RANDOM_UID UCHR("\x00\x00\x00\x06\x00\x00\x06\x01")
 
-#define TABLE_TABLE_UID "\x00\x00\x00\x01\x00\x00\x00\x00"
-#define TABLE_C_PIN_UID "\x00\x00\x00\x0b\x00\x00\x00\x00"
-#define TABLE_C_PIN_ROW_SID_UID "\x00\x00\x00\x0b\x00\x00\x00\x01"
-#define TABLE_C_PIN_ROW_MSID_UID "\x00\x00\x00\x0b\x00\x00\x84\x02"
-#define TABLE_C_PIN_ROW_USER_XXXX "\x00\x00\x00\x0b\x00\x03\x00\x00"
+#define TABLE_TABLE_UID UCHR("\x00\x00\x00\x01\x00\x00\x00\x00")
+#define TABLE_C_PIN_UID UCHR("\x00\x00\x00\x0b\x00\x00\x00\x00")
+#define TABLE_C_PIN_ROW_SID_UID UCHR("\x00\x00\x00\x0b\x00\x00\x00\x01")
+#define TABLE_C_PIN_ROW_MSID_UID UCHR("\x00\x00\x00\x0b\x00\x00\x84\x02")
+#define TABLE_C_PIN_ROW_USER_XXXX UCHR("\x00\x00\x00\x0b\x00\x03\x00\x00")
 #define TABLE_C_PIN_COLUMN_PIN 3
-#define TABLE_SP_UID "\x00\x00\x02\x05\x00\x00\x00\x00"
+#define TABLE_SP_UID UCHR("\x00\x00\x02\x05\x00\x00\x00\x00")
 #define TABLE_SP_COLUMN_UID 0
-#define TABLE_AUTHORITY_ROW_USER_XXXX "\x00\x00\x00\x09\x00\x03\x00\x00"
+#define TABLE_AUTHORITY_ROW_USER_XXXX UCHR("\x00\x00\x00\x09\x00\x03\x00\x00")
 #define TABLE_AUTHORITY_COLUMN_ENABLED 5
-#define TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_RD_LOCKED "\x00\x00\x00\x08\x00\x03\xe0\x00"
-#define TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_WR_LOCKED "\x00\x00\x00\x08\x00\x03\xe8\x00"
-#define TABLE_ACE_LOCKING_RANGE_XXXX_GET_PARAMS "\x00\x00\x00\x08\x00\x03\xd0\x00"
+#define TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_RD_LOCKED UCHR("\x00\x00\x00\x08\x00\x03\xe0\x00")
+#define TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_WR_LOCKED UCHR("\x00\x00\x00\x08\x00\x03\xe8\x00")
+#define TABLE_ACE_LOCKING_RANGE_XXXX_GET_PARAMS UCHR("\x00\x00\x00\x08\x00\x03\xd0\x00")
 #define TABLE_ACE_COLUMN_BOOLEAN_EXPR 3
 
-#define HALF_UID_AUTHORITY_OBJECT_REF "\x00\x00\x0c\x05"
-#define HALF_UID_BOOLEAN_ACE "\x00\x00\x04\x0e"
+#define HALF_UID_AUTHORITY_OBJECT_REF UCHR("\x00\x00\x0c\x05")
+#define HALF_UID_BOOLEAN_ACE UCHR("\x00\x00\x04\x0e")
 #define BOOLEAN_OR 1
 
 #define ADMIN_BASE_ID 0x00010000 // 00 00 00 09 00 01 00 00
@@ -204,18 +206,18 @@ enum TrustedCommandDirection {
 #define SID_USER_ID 0x00090002
 #define PSID_USER_ID 0x00090003
 
-#define SMUID "\x00\x00\x00\x00\x00\x00\x00\xff"
-#define THISSP "\x00\x00\x00\x00\x00\x00\x00\x01"
-#define ADMIN_SP_UID "\x00\x00\x02\x05\x00\x00\x00\x01"
-#define LOCKING_SP_UID "\x00\x00\x02\x05\x00\x00\x00\x02"
+#define SMUID UCHR("\x00\x00\x00\x00\x00\x00\x00\xff")
+#define THISSP UCHR("\x00\x00\x00\x00\x00\x00\x00\x01")
+#define ADMIN_SP_UID UCHR("\x00\x00\x02\x05\x00\x00\x00\x01")
+#define LOCKING_SP_UID UCHR("\x00\x00\x02\x05\x00\x00\x00\x02")
 
-#define AUTHORITY_XXXX_UID "\x00\x00\x00\x09\x00\x00\x00\x00"
-#define AUTHORITY_SID_UID "\x00\x00\x00\x09\x00\x00\x00\x06"
-#define AUTHORITY_PSID_UID "\x00\x00\x00\x09\x00\x01\xff\x01"
+#define AUTHORITY_XXXX_UID UCHR("\x00\x00\x00\x09\x00\x00\x00\x00")
+#define AUTHORITY_SID_UID UCHR("\x00\x00\x00\x09\x00\x00\x00\x06")
+#define AUTHORITY_PSID_UID UCHR("\x00\x00\x00\x09\x00\x01\xff\x01")
 
-#define LOCKING_RANGE_GLOBAL_UID "\x00\x00\x08\x02\x00\x00\x00\x01"
-#define LOCKING_RANGE_NNNN_UID "\x00\x00\x08\x02\x00\x03\x00\x00"
-#define LOCKING_RANGE_1_UID "\x00\x00\x08\x02\x00\x03\x00\x01"
+#define LOCKING_RANGE_GLOBAL_UID UCHR("\x00\x00\x08\x02\x00\x00\x00\x01")
+#define LOCKING_RANGE_NNNN_UID UCHR("\x00\x00\x08\x02\x00\x03\x00\x00")
+#define LOCKING_RANGE_1_UID UCHR("\x00\x00\x08\x02\x00\x03\x00\x01")
 #define LOCKING_RANGE_COLUMN_RANGE_START 3
 #define LOCKING_RANGE_COLUMN_RANGE_LENGTH 4
 #define LOCKING_RANGE_COLUMN_READ_LOCK_ENABLED 5
@@ -229,9 +231,9 @@ enum TrustedCommandDirection {
 #define LOCKING_RANGE_COLUMN_ACTIVE_KEY 10
 
 #define TPER_RESET_COMID 0x0004
-#define TABLE_TPER_INFO_OBJ_UID "\x00\x00\x02\x01\x00\x03\x00\x01"
+#define TABLE_TPER_INFO_OBJ_UID UCHR("\x00\x00\x02\x01\x00\x03\x00\x01")
 #define TABLE_TPER_INFO_COLUMN_PROGRAMMATIC_RESET_ENABLE 8
-#define DATA_REMOVAL_MECHANISM_OBJ_UID "\x00\x00\x11\x01\x00\x00\x00\x01"
+#define DATA_REMOVAL_MECHANISM_OBJ_UID UCHR("\x00\x00\x11\x01\x00\x00\x00\x01")
 
 // Table 166 Status Codes
 enum MethodStatusCode {
@@ -512,15 +514,15 @@ int skip_to_parameter(unsigned char *buffer, size_t *offset, int parameter, int 
 /**
  * Set object_uid row to contain atom. 
 */
-int set_row(struct disk_device *dev, const char *object_uid, unsigned char column,
+int set_row(struct disk_device *dev, const unsigned char *object_uid, unsigned char column,
             unsigned char *atom, size_t atom_len);
 /**
  * Acquire bytes contained in object_uid row.
 */
-int get_row_bytes(struct disk_device *dev, unsigned char *object_uid, unsigned char column,
+int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, unsigned char column,
                   unsigned char *output, size_t output_len, size_t *output_written);
 
-int get_row_int(struct disk_device *dev, unsigned char *object_uid, unsigned char column, uint64_t *output);
+int get_row_int(struct disk_device *dev, const unsigned char *object_uid, unsigned char column, uint64_t *output);
 
 
 #endif // COMMON_H_

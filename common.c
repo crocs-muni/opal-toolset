@@ -77,7 +77,7 @@ const char *error_to_string(enum MethodStatusCode msc)
     }
 }
 
-int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, int feature_code)
+static int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, int feature_code)
 {
     int err = 0;
 
@@ -127,7 +127,7 @@ int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, int fea
     return err;
 }
 
-int tcg_discovery_0_process_response(struct disk_device *dev, void *data)
+static int tcg_discovery_0_process_response(struct disk_device *dev, void *data)
 {
     int err = 0;
 
@@ -419,7 +419,7 @@ int process_method_response(const unsigned char *buffer, size_t buffer_len)
 {
     uint8_t status_code = 0;
 
-    struct packet_headers *headers = (struct packet_headers *)buffer;
+    const struct packet_headers *headers = (const struct packet_headers *)buffer;
     const unsigned char *data = buffer + sizeof(struct packet_headers);
     size_t data_length = be32_to_cpu(headers->data_subpacket.length);
 
@@ -640,7 +640,8 @@ int start_session(struct disk_device *dev, const unsigned char *SPID, size_t use
 
 
     if (user_id < SPECIAL_BASE_ID) {
-        unsigned char signing_auth[8] = AUTHORITY_XXXX_UID;
+        unsigned char signing_auth[8];
+        memcpy(signing_auth, AUTHORITY_XXXX_UID, 8);
         hex_add(signing_auth, 8, user_id);
         generate_start_session_method(dev, buffer, &i, SPID, 8, 
                                       challenge, challenge_len, signing_auth, 8);
@@ -867,7 +868,7 @@ int skip_to_parameter(unsigned char *src, size_t *offset, int parameter, int ski
     return 1;
 }
 
-int set_row(struct disk_device *dev, const char *object_uid, unsigned char column, unsigned char *atom, size_t atom_len)
+int set_row(struct disk_device *dev, const unsigned char *object_uid, unsigned char column, unsigned char *atom, size_t atom_len)
 {
     /*
     ObjectUID.Set [
@@ -906,7 +907,7 @@ int set_row(struct disk_device *dev, const char *object_uid, unsigned char colum
     return err;
 }
 
-int get_row_bytes(struct disk_device *dev, unsigned char *object_uid, unsigned char column, unsigned char *output,
+int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, unsigned char column, unsigned char *output,
                   size_t output_len, size_t *output_written)
 {
     /*
@@ -964,7 +965,7 @@ cleanup:
     return err;
 }
 
-int get_row_int(struct disk_device *dev, unsigned char *object_uid, unsigned char column, uint64_t *output)
+int get_row_int(struct disk_device *dev, const unsigned char *object_uid, unsigned char column, uint64_t *output)
 {
     /*
     TableUID.Get [

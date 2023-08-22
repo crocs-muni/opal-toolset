@@ -150,7 +150,8 @@ int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned c
 
     start_list(boolean_ace, &boolean_ace_len);
     for (size_t i = 0; i < users_len; ++i) {
-        unsigned char user_uid[] = AUTHORITY_XXXX_UID;
+        unsigned char user_uid[8];
+        memcpy(user_uid, AUTHORITY_XXXX_UID, 8);
         hex_add(user_uid, 8, users[i]);
 
         start_name(boolean_ace, &boolean_ace_len);
@@ -166,7 +167,8 @@ int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned c
         }
     }
 
-    char admin_uid[] = AUTHORITY_XXXX_UID;
+    unsigned char admin_uid[8];
+    memcpy(admin_uid, AUTHORITY_XXXX_UID, 8);
     hex_add(admin_uid, 8, ADMIN_BASE_ID + 1);
 
     start_name(boolean_ace, &boolean_ace_len);
@@ -209,8 +211,7 @@ int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned c
 int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *challenge, size_t challenge_len, size_t user)
 {
     int err = 0;
-    size_t resp_len = 0;
-    unsigned char resp[2] = { 0 }, locking_range_uid_str[9] = { 0 };
+    unsigned char locking_range_uid_str[9] = { 0 };
     uint64_t start, length, rlocked, wlocked, rlck_enabled, wlck_enabled;
 
     if (locking_range == 0) {
@@ -284,7 +285,8 @@ int setup_user(struct disk_device *dev, size_t user_uid, unsigned char *admin_pi
         return err;
     }
 
-    unsigned char user_uid_str[9] = AUTHORITY_XXXX_UID;
+    unsigned char user_uid_str[9] = { 0 };
+    memcpy(user_uid_str, AUTHORITY_XXXX_UID, 8);
     hex_add(user_uid_str, 8, user_uid);
 
     unsigned char atom_true[32] = { 0 };
@@ -297,7 +299,8 @@ int setup_user(struct disk_device *dev, size_t user_uid, unsigned char *admin_pi
         return err;
     }
 
-    unsigned char c_pin_str[9] = TABLE_C_PIN_UID;
+    unsigned char c_pin_str[9] = { 0 };
+    memcpy(c_pin_str, TABLE_C_PIN_UID, 8);
     hex_add(c_pin_str, 8, user_uid);
 
     unsigned char atom_pin[256] = { 0 };
@@ -350,7 +353,8 @@ int setup_programmatic_reset(struct disk_device *dev, const unsigned char *pwd, 
             return err;
         }
 
-        unsigned char locking_range_uid[8] = LOCKING_RANGE_NNNN_UID;
+        unsigned char locking_range_uid[8];
+        memcpy(locking_range_uid, LOCKING_RANGE_NNNN_UID, 8);
         hex_add(locking_range_uid, 8, locking_range);
 
         unsigned char atom_resets[32] = { 0 };
