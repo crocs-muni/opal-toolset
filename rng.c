@@ -69,6 +69,8 @@ int main(int argc, char **argv)
 
     for (int req_i = 0; req_i < req_repeats; ++req_i) {
 
+        memset(buffer, 0, req_bytes);
+
         if ((err = get_random(&dev, buffer, req_bytes))) {
             LOG(ERROR, "Failed to get random data.\n");
             break;
