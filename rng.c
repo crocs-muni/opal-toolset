@@ -21,6 +21,7 @@ int main(int argc, char **argv)
     int req_repeats = 1;
     int req_bytes = 32;
     bool use_scsi_sec = false;
+    unsigned char *buffer = NULL;
 
     if (argc > 2 && !strcmp(argv[argc - 1], "--scsi")) {
         use_scsi_sec = true;
@@ -56,13 +57,17 @@ int main(int argc, char **argv)
         print_usage(argv[0]);
     }
 
+    if (!(buffer = malloc(req_bytes))) {
+            LOG(ERROR, "Out of memory.\n");
+            return 1;
+    }
+
     struct disk_device dev = { 0 };
     if ((err = disk_device_open(&dev, dev_file, use_scsi_sec))) {
         return err;
     }
 
     for (int req_i = 0; req_i < req_repeats; ++req_i) {
-        unsigned char buffer[req_bytes];
 
         if ((err = get_random(&dev, buffer, req_bytes))) {
             LOG(ERROR, "Failed to get random data.\n");
@@ -76,6 +81,7 @@ int main(int argc, char **argv)
     }
 
     disk_device_close(&dev);
+    free(buffer);
 
     return err;
 }
