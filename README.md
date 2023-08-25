@@ -57,7 +57,7 @@ d5453a4fc6450f790bb37ef9fc1993ce47f5e17f78dbd573dd27e876e8a72931
 The `control` tool allows management of an Opal device.
 
 ```console
-# ./control psid_revert /dev/sda --verify-pin "${PSID_HEX}"
+# ./control psid_revert /dev/sda --verify-pin "${PSID}"
 # ./control setup_tper /dev/sda --assign-pin 000000
 # ./control setup_user /dev/sda --user 1 --verify-pin 000000 --assign-pin 111111
 # ./control setup_range /dev/sda --locking-range 1 --locking-range-start 512 --locking-range-length 512 --verify-pin 000000

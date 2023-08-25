@@ -12,9 +12,13 @@
     "        device               File of Opal-compliant disk\n"                                                       \
     "        command              One of the commands defined further\n"
 
+#define PIN_MAX_LEN 512
+
 enum ArgKey {
     ARG_KEY_VERIFY_PIN = 'v',
+    ARG_KEY_VERIFY_PIN_HEX = 9,
     ARG_KEY_ASSIGN_PIN = 1,
+    ARG_KEY_ASSIGN_PIN_HEX = 8,
     ARG_KEY_USER = 'u',
     ARG_KEY_ADMIN = 'a',
     ARG_KEY_LOCKING_RANGE = 'l',
@@ -29,7 +33,8 @@ enum ArgKey {
 };
 
 static struct argp_option options_setup_range[] = {
-    { "verify-pin", ARG_KEY_VERIFY_PIN, "hex_pin", 0, "Password of Admin1 authority", 0 },
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of Admin1 authority", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of Admin1 authority", 0 },
     { "user", ARG_KEY_USER, "id", 0, "User to have control over the locking range (can be repeated)", 0 },
     { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "Locking range to change", 0 },
     { "locking-range-start", ARG_KEY_LOCKING_RANGE_START, "position", 0, NULL, 0 },
@@ -38,37 +43,44 @@ static struct argp_option options_setup_range[] = {
 };
 
 static struct argp_option options_list_range[] = {
-    { "verify-pin", ARG_KEY_VERIFY_PIN, "hex_pin", 0, "Password of user authority", 0 },
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of user authority", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of user authority", 0 },
     { "user", ARG_KEY_USER, "id", 0, "User authority id", 0 },
     { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "Locking range to list", 0 },
     { 0 }
 };
 
 static struct argp_option options_setup_user[] = {
-    { "verify-pin", ARG_KEY_VERIFY_PIN, "hex_pin", 0, "Password of Admin1 authority", 0 },
-    { "assign-pin", ARG_KEY_ASSIGN_PIN, "hex_pin", 0, "Password to assign to selected user authority", 0 },
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of Admin1 authority", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of Admin1 authority", 0 },
+    { "assign-pin", ARG_KEY_ASSIGN_PIN, "pin", 0, "Password to assign to selected user authority", 0 },
+    { "assign-pin-hex", ARG_KEY_ASSIGN_PIN_HEX, "hex_pin", 0, "Password to assign to selected user authority", 0 },
     { "user", ARG_KEY_USER, "id", 0, "ID of the user authority", 0 },
     { 0 }
 };
 
 static struct argp_option options_setup_tper[] = { 
-    { "assign-pin", ARG_KEY_ASSIGN_PIN, "hex_pin", 0, "Password to assign to the owner authority", 0 },
+    { "assign-pin", ARG_KEY_ASSIGN_PIN, "pin", 0, "Password to assign to the owner authority", 0 },
+    { "assign-pin-hex", ARG_KEY_ASSIGN_PIN_HEX, "hex_pin", 0, "Password to assign to the owner authority", 0 },
     { 0 }
 };
 
 static struct argp_option options_psid_revert[] = { 
-    { "verify-pin", ARG_KEY_VERIFY_PIN, "hex_pin", 0, "PSID", 0 },
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "PSID", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "PSID", 0 },
     { 0 } 
 };
 
 static struct argp_option options_regenerate_key[] = {
-    { "verify-pin", ARG_KEY_VERIFY_PIN, "hex_pin", 0, "Password of Admin1 authority", 0 },
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of Admin1 authority", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of Admin1 authority", 0 },
     { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "Locking range to re-generate", 0 },
     { 0 }
 };
 
 static struct argp_option options_unlock[] = {
-    { "verify-pin", ARG_KEY_VERIFY_PIN, "hex_pin", 0, "Password of the authority", 0 },
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of the authority", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of the authority", 0 },
     { "user", ARG_KEY_USER, "id", 0, "User authority to authenticate as", 0 },
     { "admin", ARG_KEY_ADMIN, "id", 0, "Admin authority to authenticate as", 0 },
     { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "Locking range to lock/unlock", 0 },
@@ -106,9 +118,9 @@ struct Arguments {
     uint16_t locking_range;
     size_t user[32];
     size_t user_count;
-    unsigned char verify_pin[512];
+    unsigned char verify_pin[PIN_MAX_LEN];
     size_t verify_pin_len;
-    unsigned char assign_pin[512];
+    unsigned char assign_pin[PIN_MAX_LEN];
     size_t assign_pin_len;
     uint64_t locking_range_start;
     uint64_t locking_range_length;
@@ -127,42 +139,40 @@ struct Arguments {
     .locking_range_length = VAL_UNDEFINED,
 };
 
-static error_t parse_opt_hex(const char *source, unsigned char *target, size_t *target_len)
+static error_t parse_opt_pin(char *source, unsigned char *target, size_t *target_len)
 {
-    while (source[0] != 0) {
-        if (source[1] == 0) {
-            return 1;
-        }
+    size_t pin_len = strlen(source);
 
-        char source_upper = source[0];
-        if (source_upper >= '0' && source_upper <= '9') {
-            source_upper = source_upper - '0';
-        } else if (source_upper >= 'a' && source_upper <= 'f') {
-            source_upper = source_upper - 'a' + 10;
-        } else if (source_upper >= 'A' && source_upper <= 'F') {
-            source_upper = source_upper - 'A' + 10;
-        } else {
-            return 1;
-        }
-
-        char source_lower = source[1];
-        if (source_lower >= '0' && source_lower <= '9') {
-            source_lower = source_lower - '0';
-        } else if (source_lower >= 'a' && source_lower <= 'f') {
-            source_lower = source_lower - 'a' + 10;
-        } else if (source_lower >= 'A' && source_lower <= 'F') {
-            source_lower = source_lower - 'A' + 10;
-        } else {
-            return 1;
-        }
-
-        target[0] = source_upper << 4 | source_lower;
-
-        source += 2;
-        target += 1;
-        *target_len += 1;
+    if (pin_len > PIN_MAX_LEN) {
+        return 1;
     }
 
+    *target_len = pin_len;
+    strncpy((char *)target, source, PIN_MAX_LEN);
+    return 0;
+}
+
+static error_t parse_opt_hex(const char *source, unsigned char *target, size_t *target_len)
+{
+    size_t pin_len = strlen(source);
+
+    if (pin_len > 2 * PIN_MAX_LEN || pin_len % 2 != 0) {
+        return 1;
+    }
+
+    pin_len /= 2;
+    unsigned char c;
+
+    for (int i = 0; i < pin_len; i++) {
+        if (sscanf(source, "%2hhx", &c) != 1) {
+            return 1;
+        }
+
+        target[i] = c;
+        source += 2;
+    }
+
+    *target_len = pin_len;
     return 0;
 }
 
@@ -255,8 +265,12 @@ static error_t parse_opt_child(int key, char *arg, struct argp_state *state)
         args->locking_range_length = strtoull(arg, NULL, 10);
         break;
     case ARG_KEY_VERIFY_PIN:
+        return parse_opt_pin(arg, args->verify_pin, &args->verify_pin_len);
+    case ARG_KEY_VERIFY_PIN_HEX:
         return parse_opt_hex(arg, args->verify_pin, &args->verify_pin_len);
     case ARG_KEY_ASSIGN_PIN:
+        return parse_opt_pin(arg, args->assign_pin, &args->assign_pin_len);
+    case ARG_KEY_ASSIGN_PIN_HEX:
         return parse_opt_hex(arg, args->assign_pin, &args->assign_pin_len);
     case ARG_KEY_READ_LOCK_ENABLED:
         return parse_opt_bool(arg, &args->read_lock_enabled);
