@@ -163,7 +163,7 @@ static error_t parse_opt_hex(const char *source, unsigned char *target, size_t *
     pin_len /= 2;
     unsigned char c;
 
-    for (int i = 0; i < pin_len; i++) {
+    for (size_t i = 0; i < pin_len; i++) {
         if (sscanf(source, "%2hhx", &c) != 1) {
             return 1;
         }
