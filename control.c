@@ -318,8 +318,8 @@ int main(int argc, char **argv)
     }
 
     if (args.parsed < 2) {
-        printf("Command and disk need to be specified.\n");
-        argp_help(&argp_main, stdout, ARGP_HELP_SEE, argv[0]);
+        printf("Command and disk need to be specified.\n\n");
+        argp_help(&argp_main, stdout, ARGP_HELP_SHORT_USAGE|ARGP_HELP_LONG, argv[0]);
         return 1;
     }
 
