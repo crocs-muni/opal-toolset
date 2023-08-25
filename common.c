@@ -1048,7 +1048,8 @@ int disk_device_open(struct disk_device *dev, const char *file, bool use_scsi_se
     else
         dev->type = SATA;
 
-    if ((dev->fd = open(file, O_RDWR)) == -1) {
+    /* For ioctl access read-only is enough */
+    if ((dev->fd = open(file, O_RDONLY)) == -1) {
         LOG(ERROR, "Cannot open file '%s': %s\n", file, strerror(errno));
         return 1;
     }
