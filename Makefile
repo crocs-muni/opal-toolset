@@ -1,6 +1,6 @@
 all: rng discovery control
 
-CC=gcc-Wall
+CC=gcc
 CFLAGS=-g -O0 -Wall
 
 # utils
