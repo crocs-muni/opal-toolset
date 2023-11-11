@@ -233,7 +233,7 @@ static void print_level_0_discovery(struct disk_device *dev)
         size_t body_len = header->length + 4;
 
         print_comma_start(&first);
-        printf("  \"0x%x\": { \"data\": 0x", header->feature_code);
+        printf("  \"0x%x\": { \"data\": \"0x", header->feature_code);
         for (size_t j = 0; j < body_len; ++j) {
             printf("%02x", ((unsigned char *)header)[j]);
         }
@@ -474,6 +474,7 @@ static int print_udev_identify(const char *name)
     if (print_property(dev, "ID_VENDOR_ENC", "Vendor"))
         print_property(dev, "ID_VENDOR", "Vendor");
     print_property(dev, "ID_SERIAL", "Serial number long");
+    printf("  \"Source\": \"udev\"\n");
 
     udev_device_unref(dev);
     udev_unref(udev);
@@ -885,7 +886,7 @@ static int print_discovery(struct disk_device *dev, int selection)
             unsigned char random[128] = { 0 };
 
             if ((err = get_random(dev, random, sizeof(random)))) {
-                printf("  \"error\": \"%s\"", error_to_string(err));
+                printf("  \"error: %s\"", error_to_string(err));
                 break;
             }
             printf("%s  [\n", i == 0 ? "" : ",\n");
