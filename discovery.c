@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "utils.h"
+#include <libudev.h>
 
 #define TOOL_VERSION 1
 
@@ -381,88 +382,100 @@ static int print_properties(struct disk_device *dev)
     return err;
 }
 
-static int print_nvme_identify(int fd)
+#define from_hex(c) (isdigit(c) ? c - '0' : tolower(c) - 'a' + 10)
+static void unhexmangle_string(char *txt)
 {
-    int err = 0;
-    struct nvme_identify_controller_data response = { 0 };
-    struct nvme_admin_cmd cmd = { 0 };
+    size_t sz = 0, len;
+    char *buf = txt;
 
-    cmd.opcode = NVME_IDENTIFY_COMMAND;
-    // CNS field from Figure 273 of NVMe Base Specification.
-    cmd.cdw10 = 1;
-    cmd.data_len = 239; // for some reason, 240 and more writes way too many bytes
-    cmd.addr = (unsigned long long)&response;
+    len = strlen(buf);
+    if (!len)
+        return;
 
-    err = ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
-    if (err != 0) {
-        LOG(ERROR, "NVMe identify command error: %s\n", strerror(errno));
-        return err;
+    while(*txt && sz < len) {
+        if (*txt == '\\' && sz + 3 < len && txt[1] == 'x' &&
+            isxdigit(txt[2]) && isxdigit(txt[3])) {
+
+            *buf++ = from_hex(txt[2]) << 4 | from_hex(txt[3]);
+            txt += 4;
+            sz += 4;
+        } else {
+            *buf++ = *txt++;
+            sz++;
+        }
     }
-
-    printf("  \"Serial number\": \"%.*s\",\n  \"Firmware version\": \"%.*s\",\n  \"Model number\": \"%.*s\"\n",
-           (int)sizeof(response.sn), response.sn, (int)sizeof(response.firmware_revision), response.firmware_revision,
-           (int)sizeof(response.model_number), response.model_number);
-
-    return err;
+    *buf = '\0';
 }
 
-static int print_ata_identify(int fd)
+static void normalize_whitespace(char *txt)
 {
-    int err = 0;
-    unsigned char buffer[2048] = { 0 };
+    size_t sz, i, x = 0;
+    int nsp = 0, intext = 0;
 
-    struct sg_cdb_ata_pass_through_12 cdb = {
-        .operation_code = ATA_PASS_THROUGH_12_OPERATION_CODE,
-        .protocol = ATA_PROTOCOL_PIO_DATA_IN,
-        .t_length = 2,
-        .byt_blok = 1,
-        .t_dir = ATA_PASS_THROUGH_RECEIVE,
-        .ck_cond = 1,
-        .off_line = 1,
-        .original.command = ATA_IDENTIFY_DEVICE_COMMAND,
-    };
+    sz = strlen(txt);
 
-    uint8_t sense[32] = { 0 };
-    sg_io_hdr_t sg = {
-        .interface_id = 'S',
-        .dxfer_direction = SG_DXFER_FROM_DEV,
-        .cmdp = (void *)&cdb,
-        .cmd_len = sizeof(cdb),
-        .dxferp = buffer,
-        .dxfer_len = 2048,
-        .timeout = 60000,
+    for (i = 0, x = 0; i < sz && x < sz;) {
+        if (isspace(txt[i]))
+            nsp++;
+        else
+            nsp = 0, intext = 1;
 
-        .mx_sb_len = sizeof(sense),
-        .sbp = sense,
-    };
+        if (nsp > 1 || (nsp && !intext))
+            i++;
+        else
+            txt[x++] = txt[i++];
+    }
+    if (nsp && x > 0)
+        x--;
 
-    err = ioctl(fd, SG_IO, &sg);
-    if (err != 0) {
-        LOG(ERROR, "ATA identify command error: %s\n", strerror(errno));
-        goto fail;
+    txt[x] = '\0';
+}
+
+static int print_property(struct udev_device *dev, const char *prop, const char *desc)
+{
+    const char *data = udev_device_get_property_value(dev, prop);
+    char *p;
+
+    if (!data)
+        return 1;
+
+    p = strdup(data);
+    if (!p)
+        return 1;
+
+    if (!strcmp(prop, "ID_MODEL_ENC"))
+        unhexmangle_string(p);
+    normalize_whitespace(p);
+    printf("  \"%s\": \"%s\",\n", desc, p);
+    free(p);
+
+    return 0;
+}
+
+static int print_udev_identify(const char *name)
+{
+    struct udev *udev;
+    struct udev_device *dev;
+
+    udev = udev_new();
+    if (!udev)
+        return -ENODEV;
+
+    dev = udev_device_new_from_subsystem_sysname(udev, "block", name);
+    if (!dev) {
+        udev_unref(udev);
+        return -ENODEV;
     }
 
-    printf("  \"Serial number\": \"");
-    for (int i = 10; i < 19; ++i) {
-        printf("%c", buffer[2 * i + 1]);
-        printf("%c", buffer[2 * i]);
-    }
-    printf("\",\n");
-    printf("  \"Firmware version\": \"");
-    for (int i = 23; i < 26; ++i) {
-        printf("%c", buffer[2 * i + 1]);
-        printf("%c", buffer[2 * i]);
-    }
-    printf("\",\n");
-    printf("  \"Model number\": \"");
-    for (int i = 27; i < 46; ++i) {
-        printf("%c", buffer[2 * i + 1]);
-        printf("%c", buffer[2 * i]);
-    }
-    printf("\"\n");
+    print_property(dev, "ID_SERIAL_SHORT", "Serial number");
+    print_property(dev, "ID_REVISION", "Firmware version");
+    if (print_property(dev, "ID_MODEL_ENC", "Model number"))
+        print_property(dev, "ID_MODEL", "Model number");
 
-fail:
-    return err;
+    udev_device_unref(dev);
+    udev_unref(udev);
+
+    return 0;
 }
 
 typedef void (*crawl_cb_t)(unsigned char *buffer, size_t buffer_len, void *data);
@@ -646,7 +659,7 @@ static int crawl_table(struct disk_device *dev, const unsigned char *table_uid, 
         if (printing) {
             printf("      }");
         }
-        
+
         i += 8;
     }
 
@@ -804,24 +817,16 @@ static int print_discovery(struct disk_device *dev, int selection)
 
     printf("{\n");
 
-    if ((selection == SELECT_EVERYTHING) || (selection == SELECT_METAINFORMATION)) {
-        print_comma_start(&first);
-        printf("\"Metadata\": {\n"
-               "  \"Version\": \"%i\"\n"
-               "}",
-               TOOL_VERSION);
-    }
+    print_comma_start(&first);
+    printf("\"Metadata\": {\n"
+           "  \"Version\": \"%i\"\n"
+           "}",
+           TOOL_VERSION);
 
-    if ((selection == SELECT_EVERYTHING) || (selection == SELECT_IDENTIFY)) {
-        print_comma_start(&first);
-        printf("\"Identify\": {\n");
-        if (dev->type == NVME) {
-            err = print_nvme_identify(dev->fd);
-        } else {
-            err = print_ata_identify(dev->fd);
-        }
-        printf("}");
-    }
+    print_comma_start(&first);
+    printf("\"Identify\": {\n");
+    err = print_udev_identify(dev->name);
+    printf("}");
 
     if ((selection == SELECT_EVERYTHING) || (selection == SELECT_DISCOVERY_0)) {
         print_comma_start(&first);

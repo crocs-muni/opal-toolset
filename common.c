@@ -1054,10 +1054,18 @@ int disk_device_open(struct disk_device *dev, const char *file, bool use_scsi_se
         return 1;
     }
 
+    if (dev->name)
+        free(dev->name);
+    if (!strncmp(file, "/dev/", 5))
+        dev->name = strdup(&file[5]);
+    else
+        dev->name = strdup(file);
+
     return 0;
 }
 
 void disk_device_close(struct disk_device *dev)
 {
     close(dev->fd);
+    free(dev->name);
 }

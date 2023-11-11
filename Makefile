@@ -8,7 +8,7 @@ rng: common.o utils.o rng.c
 	$(CC) $(CFLAGS) rng.c common.o utils.o -o rng
 
 discovery: common.o utils.o discovery.c
-	$(CC) $(CFLAGS) discovery.c common.o utils.o -o discovery
+	$(CC) $(CFLAGS) discovery.c common.o utils.o -o discovery -ludev
 
 control: common.o utils.o control.c
 	$(CC) $(CFLAGS) control.c common.o utils.o -o control

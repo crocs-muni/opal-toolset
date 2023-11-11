@@ -400,6 +400,7 @@ struct disk_device {
         SCSI,
     } type;
 
+    char *name;
     uint16_t base_com_id;
     uint32_t host_session_id;
     uint32_t sp_session_id;
