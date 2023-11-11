@@ -443,7 +443,7 @@ static int print_property(struct udev_device *dev, const char *prop, const char 
     if (!p)
         return 1;
 
-    if (!strcmp(prop, "ID_MODEL_ENC"))
+    if (!strcmp(prop, "ID_MODEL_ENC") || !strcmp(prop, "ID_VENDOR_ENC"))
         unhexmangle_string(p);
     normalize_whitespace(p);
     printf("  \"%s\": \"%s\",\n", desc, p);
@@ -471,6 +471,9 @@ static int print_udev_identify(const char *name)
     print_property(dev, "ID_REVISION", "Firmware version");
     if (print_property(dev, "ID_MODEL_ENC", "Model number"))
         print_property(dev, "ID_MODEL", "Model number");
+    if (print_property(dev, "ID_VENDOR_ENC", "Vendor"))
+        print_property(dev, "ID_VENDOR", "Vendor");
+    print_property(dev, "ID_SERIAL", "Serial number long");
 
     udev_device_unref(dev);
     udev_unref(udev);
