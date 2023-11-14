@@ -161,8 +161,8 @@ int main(int argc, char **argv)
 
             if ((err = get_random(&dev, buffer, current_req_bytes))) {
                 LOG(ERROR, "Failed to get random data.\n");
-                err = 1;
-                break;
+                sleep(5);
+                continue;
             }
 
             // TODO allow hexadecimal output
