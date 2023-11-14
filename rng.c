@@ -5,6 +5,8 @@
 
 #include <errno.h>
 
+#define BUFFER_SIZE 512
+
 enum arg_keys
 {
     ARG_KEY_DEVICE_FILE = 'd',
@@ -43,6 +45,11 @@ struct arguments
     .use_scsi_sec = false,
     .hex_output = false,
 };
+
+static size_t min(size_t a, size_t b)
+{
+    return a < b ? a : b;
+}
 
 // TODO update or replace with arpg_usage function
 static void print_usage(char *prog_name)
@@ -125,7 +132,7 @@ int main(int argc, char **argv)
         goto exit;
     }
 
-    if (!(buffer = malloc(args.req_bytes))) {
+    if (!(buffer = malloc(BUFFER_SIZE))) {
         LOG(ERROR, "Out of memory.\n");
         err = 1;
         goto exit;
@@ -146,18 +153,26 @@ int main(int argc, char **argv)
     }
 
     for (int req_i = 0; req_i < args.req_repeats; ++req_i) {
-        memset(buffer, 0, args.req_bytes);
+        size_t bytes_read = 0;
 
-        if ((err = get_random(&dev, buffer, args.req_bytes))) {
-            LOG(ERROR, "Failed to get random data.\n");
-            break;
-        }
+        while (bytes_read < args.req_bytes) {
+            memset(buffer, 0, BUFFER_SIZE);
+            size_t current_req_bytes = min(args.req_bytes - bytes_read, BUFFER_SIZE);
 
-        // TODO allow hexadecimal output
-        if (fwrite(buffer, sizeof(char), args.req_bytes, out) != args.req_bytes) {
-            LOG(ERROR, "Failed to write random data.\n");
-            err = 1;
-            break;
+            if ((err = get_random(&dev, buffer, current_req_bytes))) {
+                LOG(ERROR, "Failed to get random data.\n");
+                err = 1;
+                break;
+            }
+
+            // TODO allow hexadecimal output
+            if (fwrite(buffer, sizeof(char), current_req_bytes, out) != current_req_bytes) {
+                LOG(ERROR, "Failed to write random data.\n");
+                err = 1;
+                break;
+            }
+
+            bytes_read += current_req_bytes;
         }
     }
 
