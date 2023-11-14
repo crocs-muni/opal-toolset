@@ -110,8 +110,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case ARG_KEY_USE_SCSI:
         args->use_scsi_sec = true;
+	break;
     case ARG_KEY_HEX_OUTPUT:
-        args->hex_output = true;
+        // args->hex_output = true;
+	fprintf(stderr, "Option -%c not implemented.\n", ARG_KEY_HEX_OUTPUT);
+	print_usage("rng");
     default:
         return ARGP_ERR_UNKNOWN;
     }
