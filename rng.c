@@ -170,7 +170,9 @@ int main(int argc, char **argv)
 
         // TODO allow hexadecimal output
         // TODO decide on using fopen or open solely
-        if (fwrite(buffer, sizeof(char), current_req_bytes, out) != current_req_bytes) {
+        size_t written = fwrite(buffer, sizeof(char), current_req_bytes, out);
+        fflush(out);
+        if (written != current_req_bytes) {
             LOG(ERROR, "Failed to write random data.\n");
             err = 1;
             break;
