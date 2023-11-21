@@ -49,19 +49,6 @@ static size_t min(size_t a, size_t b)
     return a < b ? a : b;
 }
 
-// TODO update or replace with arpg_usage function
-static void print_usage(char *prog_name)
-{
-    fprintf(stderr,
-            "Usage: %s <device> [bytes [repeats [log_level]]] [--scsi]\n"
-            "\n"
-            "Bytes are acquired in chunks of 32 bytes.\n"
-            "Each repeat is a separate session.\n",
-            prog_name);
-    exit(1);
-}
-
-// TODO indicate cause of error
 static error_t parse_num(char *num_str, size_t *num_out)
 {
     char *end;
@@ -85,12 +72,14 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     switch (key) {
     case ARG_KEY_REQ_BYTES:
         if (parse_num(arg, &args->req_bytes)) {
-            return 1;
+            argp_err_exit_status = 1;
+            argp_error(state, "Invalid numeric argument for -%c option provided.", ARG_KEY_REQ_BYTES);
         }
         break;
     case ARG_KEY_CHUNK_SIZE:
         if (parse_num(arg, &args->chunk_size)) {
-            return 1;
+            argp_err_exit_status = 1;
+            argp_error(state, "Invalid numeric argument for -%c option provided.", ARG_KEY_CHUNK_SIZE);
         }
         break;
     case ARG_KEY_OUTPUT_FILE:
@@ -99,7 +88,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     case ARG_KEY_LOG_LEVEL:
         size_t tmp;
         if (parse_num(arg, &tmp) || tmp < ERROR || tmp > EVERYTHING) {
-            return 1;
+            argp_err_exit_status = 1;
+            argp_error(state, "Invalid numeric argument for -%c option provided.", ARG_KEY_LOG_LEVEL);
         }
         current_log_level = tmp;
         break;
@@ -108,12 +98,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case ARG_KEY_HEX_OUTPUT:
         // args->hex_output = true;
-        fprintf(stderr, "Option -%c not implemented.\n", ARG_KEY_HEX_OUTPUT);
-        print_usage("rng");
+        argp_err_exit_status = 1;
+        argp_error(state, "Option -%c not implemented.", ARG_KEY_HEX_OUTPUT);
     case ARGP_KEY_ARG:
         if (state->arg_num >= 1) {
-            fprintf(stderr, "Too many arguments given.\n");
-            print_usage("rng");
+            argp_err_exit_status = 1;
+            argp_error(state, "Too many arguments given.");
         }
         args->dev_file = arg;
         break;
@@ -131,8 +121,11 @@ int main(int argc, char **argv)
     int err = 0;
     unsigned char *buffer = NULL;
 
-    if (argp_parse(&argp, argc, argv, 0, 0, &args) || args.dev_file == NULL) {
-        print_usage("rng");
+    argp_parse(&argp, argc, argv, 0, 0, &args);
+
+    if (args.dev_file == NULL) {
+        fprintf(stderr, "The disk device file must be specified.\n");
+        argp_help(&argp, stdout, ARGP_HELP_SHORT_USAGE, argv[0]);
         err = 1;
         goto exit;
     }
