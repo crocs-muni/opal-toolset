@@ -5,9 +5,10 @@
 
 #include <errno.h>
 
+#define MAIN_DOC_STRING "\n        DEVICE               File of Opal-compliant disk\n"
+
 enum arg_keys
 {
-    ARG_KEY_DEVICE_FILE = 'd',
     ARG_KEY_REQ_BYTES = 'b',
     ARG_KEY_CHUNK_SIZE = 'c',
     ARG_KEY_OUTPUT_FILE = 'o',
@@ -17,7 +18,6 @@ enum arg_keys
 };
 
 static struct argp_option options[] = {
-    { "device", ARG_KEY_DEVICE_FILE, "device", 0, "Disk device", 0 },
     { "bytes", ARG_KEY_REQ_BYTES, "number of bytes", 0, "Number of random bytes within a sequence (defaults to 32 bytes)", 0 },
     { "chunk-size", ARG_KEY_CHUNK_SIZE, "size of chunks in bytes", 0, "Divide acquisition of the random sequence into chunks of a specified size (defaults to 512 bytes)", 0 },
     { "output", ARG_KEY_OUTPUT_FILE, "file", 0, "Output file (defaults to stdout)", 0 },
@@ -83,9 +83,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     struct arguments *args = state->input;
 
     switch (key) {
-    case ARG_KEY_DEVICE_FILE:
-        args->dev_file = arg;
-        break;
     case ARG_KEY_REQ_BYTES:
         if (parse_num(arg, &args->req_bytes)) {
             return 1;
@@ -113,6 +110,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         // args->hex_output = true;
         fprintf(stderr, "Option -%c not implemented.\n", ARG_KEY_HEX_OUTPUT);
         print_usage("rng");
+    case ARGP_KEY_ARG:
+        if (state->arg_num >= 1) {
+            fprintf(stderr, "Too many arguments given.\n");
+            print_usage("rng");
+        }
+        args->dev_file = arg;
+        break;
     default:
         return ARGP_ERR_UNKNOWN;
     }
@@ -120,7 +124,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     return 0;
 }
 
-static struct argp argp = { options, parse_opt, 0, 0 };
+static struct argp argp = { options, parse_opt, "DEVICE", MAIN_DOC_STRING };
 
 int main(int argc, char **argv)
 {
