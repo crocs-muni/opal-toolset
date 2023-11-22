@@ -20,10 +20,10 @@ enum arg_keys
 static struct argp_option options[] = {
     { "bytes", ARG_KEY_REQ_BYTES, "number of bytes", 0, "Number of random bytes within a sequence (defaults to 32 bytes)", 0 },
     { "chunk-size", ARG_KEY_CHUNK_SIZE, "size of chunks in bytes", 0, "Divide acquisition of the random sequence into chunks of a specified size (defaults to 512 bytes)", 0 },
-    { "output", ARG_KEY_OUTPUT_FILE, "file", 0, "Output file (defaults to stdout)", 0 },
+    { "output", ARG_KEY_OUTPUT_FILE, "file", 0, "Output file, use \"-\" for binary stdout output", 0 },
     { "log-level", ARG_KEY_LOG_LEVEL, "level", 0, "Log level", 0 },
     { "scsi", ARG_KEY_USE_SCSI, 0, 0, "Use SCSI", 0 },
-    { "hex", ARG_KEY_HEX_OUTPUT, 0, 0, "Output random bytes in hexadecimal (NOT IMPLEMENTED)", 0 },
+    { "hex", ARG_KEY_HEX_OUTPUT, 0, 0, "Output random bytes in hexadecimal", 0 },
     { 0 }
 };
 
@@ -117,6 +117,7 @@ static struct argp argp = { options, parse_opt, "DEVICE", MAIN_DOC_STRING };
 
 int main(int argc, char **argv)
 {
+    FILE *out;
     int err = 0;
     unsigned char *buffer = NULL;
 
@@ -142,11 +143,17 @@ int main(int argc, char **argv)
         goto buffer_cleanup;
     }
 
-    FILE *out = stdout;
-    if (args.out_file_name != NULL && (out = fopen(args.out_file_name, "a")) == NULL) {
-        LOG(ERROR, "Failed to open output file.\n");
-        err = 1;
-        goto disk_cleanup;
+    if (!args.out_file_name) {
+        args.hex_output = true;
+        out = stdout;
+    } else if (!strcmp(args.out_file_name, "-")) {
+        out = stdout;
+    } else {
+        if (!(out = fopen(args.out_file_name, "a"))) {
+            LOG(ERROR, "Failed to open output file.\n");
+            err = 1;
+            goto disk_cleanup;
+        }
     }
 
     size_t bytes_read = 0;
