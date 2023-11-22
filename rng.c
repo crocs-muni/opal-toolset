@@ -117,30 +117,28 @@ static struct argp argp = { options, parse_opt, "DEVICE", MAIN_DOC_STRING };
 
 int main(int argc, char **argv)
 {
-    FILE *out;
-    int err = 0;
+    struct disk_device dev = { 0 };
+    FILE *out = NULL;
+    int err = 1, fail_repeat_count = 0;
     unsigned char *buffer = NULL;
+    size_t current_req_bytes, bytes_read = 0, written;
 
     argp_parse(&argp, argc, argv, 0, 0, &args);
 
     if (args.dev_file == NULL) {
         fprintf(stderr, "The disk device file must be specified.\n");
         argp_help(&argp, stdout, ARGP_HELP_SHORT_USAGE, argv[0]);
-        err = 1;
-        goto exit;
+        goto fail;
     }
 
     if (!(buffer = malloc(args.chunk_size))) {
         LOG(ERROR, "Out of memory.\n");
-        err = 1;
-        goto exit;
+        goto fail;
     }
 
-    struct disk_device dev = { 0 };
     if ((err = disk_device_open(&dev, args.dev_file, args.use_scsi_sec))) {
         LOG(ERROR, "Failed to open device file.\n");
-        err = 1;
-        goto buffer_cleanup;
+        goto fail;
     }
 
     if (!args.out_file_name) {
@@ -151,14 +149,11 @@ int main(int argc, char **argv)
     } else {
         if (!(out = fopen(args.out_file_name, "a"))) {
             LOG(ERROR, "Failed to open output file.\n");
-            err = 1;
-            goto disk_cleanup;
+            goto fail;
         }
     }
 
-    size_t current_req_bytes, bytes_read = 0;
-    int fail_repeat_count = 0;
-
+    err = 0;
     while (bytes_read < args.req_bytes) {
         memset(buffer, 0, args.chunk_size);
         current_req_bytes = min(args.req_bytes - bytes_read, args.chunk_size);
@@ -175,7 +170,6 @@ int main(int argc, char **argv)
         fail_repeat_count = 0;
 
         // TODO decide on using fopen or open solely
-        size_t written;
         if (args.hex_output) {
             size_t byte_i;
             bool eol;
@@ -199,11 +193,10 @@ int main(int argc, char **argv)
         bytes_read += current_req_bytes;
     }
 
-    fclose(out);
-disk_cleanup:
+fail:
+    if (out && out != stdout)
+        fclose(out);
     disk_device_close(&dev);
-buffer_cleanup:
     free(buffer);
-exit:
     return err;
 }
