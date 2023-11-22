@@ -115,11 +115,28 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
 static struct argp argp = { options, parse_opt, "DEVICE", MAIN_DOC_STRING };
 
+static size_t write_buffer(int fd, const void *buf, size_t length)
+{
+        size_t write_size = 0;
+        ssize_t w;
+
+        do {
+            w = write(fd, buf, length - write_size);
+            if (w < 0 && errno != EINTR)
+                return w;
+            if (w > 0) {
+                write_size += (size_t) w;
+                buf = (const uint8_t*)buf + w;
+            }
+        } while (w == 0 || write_size != length);
+
+        return write_size;
+}
+
 int main(int argc, char **argv)
 {
     struct disk_device dev = { 0 };
-    FILE *out = NULL;
-    int err = 1, fail_repeat_count = 0;
+    int fd = -1, err = 1, fail_repeat_count = 0;
     unsigned char *buffer = NULL;
     size_t current_req_bytes, bytes_read = 0, written;
 
@@ -141,16 +158,22 @@ int main(int argc, char **argv)
         goto fail;
     }
 
-    if (!args.out_file_name) {
+    if (!args.out_file_name)
         args.hex_output = true;
-        out = stdout;
-    } else if (!strcmp(args.out_file_name, "-")) {
-        out = stdout;
-    } else {
-        if (!(out = fopen(args.out_file_name, "a"))) {
-            LOG(ERROR, "Failed to open output file.\n");
-            goto fail;
-        }
+
+    if (args.out_file_name && args.hex_output) {
+        LOG(ERROR, "Hex output is possible only to stdout.\n");
+        goto fail;
+    }
+
+    if (!args.out_file_name || !strcmp(args.out_file_name, "-"))
+        fd = STDOUT_FILENO;
+    else
+        fd = open(args.out_file_name, O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+
+    if (fd == -1) {
+        LOG(ERROR, "Failed to open output file.\n");
+        goto fail;
     }
 
     err = 0;
@@ -169,21 +192,22 @@ int main(int argc, char **argv)
         }
         fail_repeat_count = 0;
 
-        // TODO decide on using fopen or open solely
         if (args.hex_output) {
             size_t byte_i;
             bool eol;
             for (byte_i = 0; byte_i < current_req_bytes; byte_i++) {
                 eol = !((byte_i + 1) % 32);
-                printf("%02x%s", buffer[byte_i], eol ? "\n" : "");
+                fprintf(stdout, "%02x%s", buffer[byte_i], eol ? "\n" : "");
             }
             if (!eol)
-                printf("\n");
+                fprintf(stdout, "\n");
+            fflush(stdout);
             written = current_req_bytes;
-        } else
-            written = fwrite(buffer, sizeof(char), current_req_bytes, out);
+        } else {
+            written = write_buffer(fd, buffer, current_req_bytes);
+            fdatasync(fd);
+        }
 
-        fflush(out);
         if (written != current_req_bytes) {
             LOG(ERROR, "Failed to write random data.\n");
             err = 1;
@@ -194,8 +218,8 @@ int main(int argc, char **argv)
     }
 
 fail:
-    if (out && out != stdout)
-        fclose(out);
+    if (fd != -1)
+        close(fd);
     disk_device_close(&dev);
     free(buffer);
     return err;
