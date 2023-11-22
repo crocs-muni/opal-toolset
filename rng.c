@@ -97,9 +97,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         args->use_scsi_sec = true;
         break;
     case ARG_KEY_HEX_OUTPUT:
-        // args->hex_output = true;
-        argp_err_exit_status = 1;
-        argp_error(state, "Option -%c not implemented.", ARG_KEY_HEX_OUTPUT);
+        args->hex_output = true;
+        break;
     case ARGP_KEY_ARG:
         if (state->arg_num >= 1) {
             argp_err_exit_status = 1;
@@ -165,9 +164,21 @@ int main(int argc, char **argv)
             continue;
         }
 
-        // TODO allow hexadecimal output
         // TODO decide on using fopen or open solely
-        size_t written = fwrite(buffer, sizeof(char), current_req_bytes, out);
+        size_t written;
+        if (args.hex_output) {
+            size_t byte_i;
+            bool eol;
+            for (byte_i = 0; byte_i < current_req_bytes; byte_i++) {
+                eol = !((byte_i + 1) % 32);
+                printf("%02x%s", buffer[byte_i], eol ? "\n" : "");
+            }
+            if (!eol)
+                printf("\n");
+            written = current_req_bytes;
+        } else
+            written = fwrite(buffer, sizeof(char), current_req_bytes, out);
+
         fflush(out);
         if (written != current_req_bytes) {
             LOG(ERROR, "Failed to write random data.\n");
