@@ -156,20 +156,23 @@ int main(int argc, char **argv)
         }
     }
 
-    size_t bytes_read = 0;
+    size_t current_req_bytes, bytes_read = 0;
+    int fail_repeat_count = 0;
 
     while (bytes_read < args.req_bytes) {
         memset(buffer, 0, args.chunk_size);
-        size_t current_req_bytes = min(args.req_bytes - bytes_read, args.chunk_size);
+        current_req_bytes = min(args.req_bytes - bytes_read, args.chunk_size);
 
         if ((err = get_random(&dev, buffer, current_req_bytes))) {
             LOG(ERROR, "Failed to get random data.\n");
-            // It might be useful to wait when the disk fails to provide random data
-            // (e.g., to regain enough entropy).
-            // Sleeping should be cut-off after some number of tries.
-            // sleep(5);
-            continue;
+            if (++fail_repeat_count < 5) {
+                sleep(1);
+                continue;
+            }
+            err = 1;
+            break;
         }
+        fail_repeat_count = 0;
 
         // TODO decide on using fopen or open solely
         size_t written;
