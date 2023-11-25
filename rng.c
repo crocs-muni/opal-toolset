@@ -20,10 +20,10 @@ enum arg_keys
 static struct argp_option options[] = {
     { "bytes", ARG_KEY_REQ_BYTES, "number of bytes", 0, "Number of random bytes within a sequence (defaults to 32 bytes)", 0 },
     { "chunk-size", ARG_KEY_CHUNK_SIZE, "size of chunks in bytes", 0, "Divide acquisition of the random sequence into chunks of a specified size (defaults to 512 bytes)", 0 },
-    { "output", ARG_KEY_OUTPUT_FILE, "file", 0, "Output file, use \"-\" for binary stdout output", 0 },
+    { "output", ARG_KEY_OUTPUT_FILE, "file", 0, "Output file for binary output, use \"-\" for binary stdout output (defaults to stdout hexadecimal output)", 0 },
     { "log-level", ARG_KEY_LOG_LEVEL, "level", 0, "Log level", 0 },
     { "scsi", ARG_KEY_USE_SCSI, 0, 0, "Use SCSI", 0 },
-    { "hex", ARG_KEY_HEX_OUTPUT, 0, 0, "Output random bytes in hexadecimal", 0 },
+    { "hex", ARG_KEY_HEX_OUTPUT, 0, 0, "Output random bytes in hexadecimal, only available for stdout output", 0 },
     { 0 }
 };
 
@@ -68,6 +68,7 @@ static error_t parse_num(char *num_str, size_t *num_out)
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
     struct arguments *args = state->input;
+    size_t tmp;
 
     switch (key) {
     case ARG_KEY_REQ_BYTES:
@@ -86,8 +87,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         args->out_file_name = arg;
         break;
     case ARG_KEY_LOG_LEVEL:
-        size_t tmp;
-        if (parse_num(arg, &tmp) || tmp < ERROR || tmp > EVERYTHING) {
+        if (parse_num(arg, &tmp) || tmp > EVERYTHING) {
             argp_err_exit_status = 1;
             argp_error(state, "Invalid numeric argument for -%c option provided.", ARG_KEY_LOG_LEVEL);
         }
