@@ -45,6 +45,11 @@ extern enum log_level current_log_level;
         }                                                                                                              \
     }
 
+/* interrupt handling */
+extern volatile int quit;
+void set_int_block(int block);
+void set_int_handler(int block);
+
 struct com_packet {
     uint8_t reserved_1[4];
     uint16_t comid;

@@ -1069,3 +1069,33 @@ void disk_device_close(struct disk_device *dev)
     close(dev->fd);
     free(dev->name);
 }
+
+/* interrupt handling */
+volatile int quit = 0;
+
+static void int_handler(int sig __attribute__((__unused__)))
+{
+    quit++;
+}
+
+void set_int_block(int block)
+{
+    sigset_t signals_open;
+
+    sigemptyset(&signals_open);
+    sigaddset(&signals_open, SIGINT);
+    sigaddset(&signals_open, SIGTERM);
+    sigprocmask(block ? SIG_SETMASK : SIG_UNBLOCK, &signals_open, NULL);
+    quit = 0;
+}
+
+void set_int_handler(int block)
+{
+    struct sigaction sigaction_open;
+
+    memset(&sigaction_open, 0, sizeof(struct sigaction));
+    sigaction_open.sa_handler = int_handler;
+    sigaction(SIGINT, &sigaction_open, 0);
+    sigaction(SIGTERM, &sigaction_open, 0);
+    set_int_block(block);
+}

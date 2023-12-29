@@ -176,14 +176,16 @@ int main(int argc, char **argv)
         goto fail;
     }
 
+    set_int_handler(0);
+
     err = 0;
-    while (bytes_read < args.req_bytes) {
+    while (bytes_read < args.req_bytes || quit) {
         memset(buffer, 0, args.chunk_size);
         current_req_bytes = min(args.req_bytes - bytes_read, args.chunk_size);
 
         if ((err = get_random(&dev, buffer, current_req_bytes))) {
             LOG(ERROR, "Failed to get random data.\n");
-            if (++fail_repeat_count < 5) {
+            if (++fail_repeat_count < 5 && !quit) {
                 sleep(1);
                 continue;
             }

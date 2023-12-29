@@ -515,7 +515,7 @@ int get_random(struct disk_device *dev, unsigned char *output, size_t output_len
     tiny_atom(command, &command_len, 0, RANDOM_REQUEST_SIZE); // Count
     finish_method(command, &command_len);
 
-    for (size_t done = 0; done < output_len; done += RANDOM_REQUEST_SIZE) {
+    for (size_t done = 0; done < output_len && !quit; done += RANDOM_REQUEST_SIZE) {
         unsigned char response[512] = { 0 };
 
         if ((err = invoke_method(dev, command, command_len, response, sizeof(response)))) {
@@ -542,6 +542,11 @@ int get_random(struct disk_device *dev, unsigned char *output, size_t output_len
     }
 
 cleanup:
+    if (quit && !err) {
+        err = -1;
+        LOG(ERROR, "Interrupted by a signal.\n");
+    }
+
     close_session(dev);
     return err;
 }
