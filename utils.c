@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "utils.h"
-
 #include "common.h"
-
 #include <inttypes.h>
 
 static int generate_locking_range_set_command(struct disk_device *dev, unsigned char *buffer, size_t *i,
@@ -383,6 +381,8 @@ int tper_reset(struct disk_device *dev)
     int err = 0;
     unsigned char buffer[512] = { 0 };
 
+    LOG(INFO, "TPer reset\n");
+
     if ((err = trusted_command(dev, buffer, sizeof(buffer), IF_SEND, 0x02, TPER_RESET_COMID))) {
         LOG(ERROR, "Failed to send programmatic reset.\n");
     }
@@ -460,12 +460,13 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
 
 int psid_revert(struct disk_device *dev, const unsigned char *psid, size_t psid_len)
 {
-
     int err = 0;
 
     unsigned char buffer[1024] = { 0 };
     size_t buffer_used = 0;
     unsigned char response[1024] = { 0 };
+
+    LOG(INFO, "PSID revert\n");
 
     if ((err = start_session(dev, ADMIN_SP_UID, PSID_USER_ID, psid, psid_len))) {
         LOG(ERROR, "Cannot initialise session.\n");
@@ -485,6 +486,7 @@ int psid_revert(struct disk_device *dev, const unsigned char *psid, size_t psid_
     }
 
     // The session is aborted automatically.
+    LOG(INFO, "------- ABORT SESSION -------\n\n");
 
     return err;
 }
@@ -492,7 +494,6 @@ int psid_revert(struct disk_device *dev, const unsigned char *psid, size_t psid_
 #define RANDOM_REQUEST_SIZE 32 // Opal says that the minimal supported maximum is 32 bytes
 int get_random(struct disk_device *dev, unsigned char *output, size_t output_len)
 {
-
     int err = 0;
     unsigned char command[512] = { 0 };
     size_t command_len = 0;
