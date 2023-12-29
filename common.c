@@ -420,15 +420,39 @@ int process_method_response(const unsigned char *buffer, size_t buffer_len)
     uint8_t status_code = 0;
 
     const struct packet_headers *headers = (const struct packet_headers *)buffer;
-    const unsigned char *data = buffer + sizeof(struct packet_headers);
-    size_t data_length = be32_to_cpu(headers->data_subpacket.length);
+    const unsigned char *data = NULL;
+    size_t i = 0, data_length = 0, backtracking_length;
+
+    if (buffer_len < sizeof(struct packet_headers)) {
+        LOG(ERROR, "Buffer was not large enough for mandatory headers.\n");
+        return -1;
+    }
+
+    if (be32_to_cpu(headers->com_packet.length) == 0) {
+        LOG(ERROR, "ComPacket with 0 length (outstanding %i, min_transfer %i).\n",
+            be32_to_cpu(headers->com_packet.outstanding_data),
+            be32_to_cpu(headers->com_packet.min_transfer));
+        return -1;
+    }
+
+    if (be32_to_cpu(headers->packet.length) == 0) {
+        LOG(ERROR, "Packet with 0 length (ComPacket length %i).\n",
+            be32_to_cpu(headers->com_packet.length));
+        return -1;
+    }
+
+    if (be32_to_cpu(headers->data_subpacket.length) == 0) {
+        LOG(ERROR, "SubPacket with 0 length.\n");
+        return -1;
+    }
+
+    data_length = be32_to_cpu(headers->data_subpacket.length);
+    data = buffer + sizeof(struct packet_headers);
 
     if (buffer_len < sizeof(struct packet_headers) + data_length) {
         LOG(ERROR, "Buffer was not large enough for the response.\n");
-        return 1;
+        return -1;
     }
-
-    size_t i = 0;
 
     if (data[i] == END_OF_SESSION_TOKEN) {
         return 0;
@@ -458,7 +482,7 @@ int process_method_response(const unsigned char *buffer, size_t buffer_len)
         i += 8; // method uid
     }
 
-    size_t backtracking_length = 8;
+    backtracking_length = 8;
     if (backtracking_length > data_length - 7) {
         backtracking_length = data_length - 7;
     }
@@ -504,7 +528,7 @@ int invoke_method(struct disk_device *dev, unsigned char *buff_in, size_t buff_i
         return err;
     }
     if ((err = process_method_response(buff_out, buff_out_len))) {
-        LOG(ERROR, "Received bad response.\n");
+        LOG(ERROR, "Received bad response: %i.\n", err);
         return err;
     }
 
