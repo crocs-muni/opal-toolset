@@ -150,13 +150,26 @@ static int tcg_discovery_0_process_response(struct disk_device *dev, void *data)
     return err;
 }
 
-static void log_packet_data(const unsigned char *response)
+static void log_packet_data(const unsigned char *response, int comID)
 {
     int l = 0;
     const char *name;
+    size_t length;
+    bool session;
 
-    for (int x = 0; x < 254; ++x) {
-        if (x == sizeof(struct packet_headers)) {
+    if (comID < 0x800) {
+        // FIXME: Discovery 0 or TPer reset
+        length = 254;
+        session = false;
+    } else {
+        // These should be from initiated session with packet headers
+        const struct packet_headers *headers = (const struct packet_headers *)response;
+        length = sizeof(struct packet_headers) + be32_to_cpu(headers->data_subpacket.length);
+        session = true;
+    }
+
+    for (int x = 0; x < length; ++x) {
+        if (session && x == sizeof(struct packet_headers)) {
             LOG_C(EVERYTHING, "| ");
         }
         if (l == 2) {
@@ -224,7 +237,7 @@ static int nvme_security_command(int fd, uint8_t *buffer, size_t buffer_len,
     err = ioctl(fd, NVME_IOCTL_ADMIN_CMD, &cmd);
 
     LOG(EVERYTHING, "Packet %s:\n", direction == IF_RECV ? "received" : "sent");
-    log_packet_data(buffer);
+    log_packet_data(buffer, comID);
 
     if (err != 0) {
         LOG(ERROR, "Problem with sending NVMe Security command: %s.\n", strerror(errno));
@@ -235,7 +248,7 @@ static int nvme_security_command(int fd, uint8_t *buffer, size_t buffer_len,
 
 static int scsi_send_cdb(int fd, uint8_t *cdb, size_t cdb_len,
                          uint8_t *response, size_t response_len,
-                         enum TrustedCommandDirection direction)
+                         enum TrustedCommandDirection direction, int comID)
 {
     int err = 0;
 
@@ -255,7 +268,7 @@ static int scsi_send_cdb(int fd, uint8_t *cdb, size_t cdb_len,
     err = ioctl(fd, SG_IO, &sg);
 
     LOG(EVERYTHING, "Packet %s:\n", direction == IF_RECV ? "received" : "sent");
-    log_packet_data(response);
+    log_packet_data(response, comID);
 
     if (err != 0) {
         LOG(ERROR, "Problem with sending ATA Trusted command: %s.\n", strerror(errno));
@@ -290,7 +303,7 @@ static int ata_trusted_command(int fd, uint8_t *response, size_t response_len,
         .trusted_receive.command = direction == IF_RECV ? ATA_TRUSTED_RECEIVE : ATA_TRUSTED_SEND,
     };
 
-    return scsi_send_cdb(fd, (uint8_t *)&cdb, sizeof(cdb), response, response_len, direction);
+    return scsi_send_cdb(fd, (uint8_t *)&cdb, sizeof(cdb), response, response_len, direction, sp_specific);
 }
 
 static int scsi_security_protocol(int fd, uint8_t *response, size_t response_len,
@@ -304,7 +317,7 @@ static int scsi_security_protocol(int fd, uint8_t *response, size_t response_len
         .allocation_length = cpu_to_be32(response_len),
     };
 
-    return scsi_send_cdb(fd, (uint8_t *)&cdb, sizeof(cdb), response, response_len, direction);
+    return scsi_send_cdb(fd, (uint8_t *)&cdb, sizeof(cdb), response, response_len, direction, protocol_specific);
 }
 
 int trusted_command(struct disk_device *dev, uint8_t *msg, size_t msg_len, enum TrustedCommandDirection direction,
