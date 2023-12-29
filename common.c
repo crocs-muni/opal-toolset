@@ -153,41 +153,51 @@ static int tcg_discovery_0_process_response(struct disk_device *dev, void *data)
 static void log_packet_data(const unsigned char *response)
 {
     int l = 0;
+    const char *name;
+
     for (int x = 0; x < 254; ++x) {
         if (x == sizeof(struct packet_headers)) {
             LOG_C(EVERYTHING, "| ");
         }
         if (l == 2) {
-            LOG_C(EVERYTHING, "%s ", error_to_string(response[x]));
+            LOG_C(EVERYTHING, "%02x(%s) ", response[x], error_to_string(response[x]));
             l = 0;
             continue;
         } else if (l > 0) {
             l++;
         }
+
         switch (response[x]) {
         case END_OF_DATA_TOKEN:
-            LOG_C(EVERYTHING, "END_OF_DATA_TOKEN ");
+            name = "EOD";
             l = 1;
             break;
         case START_LIST_TOKEN:
-            LOG_C(EVERYTHING, "START_LIST_TOKEN ");
+            name = "SL";
             break;
         case END_LIST_TOKEN:
-            LOG_C(EVERYTHING, "END_LIST_TOKEN ");
+            name = "EL";
             break;
         case START_NAME_TOKEN:
-            LOG_C(EVERYTHING, "START_NAME_TOKEN ");
+            name = "SN";
             break;
         case END_NAME_TOKEN:
-            LOG_C(EVERYTHING, "END_NAME_TOKEN ");
+            name = "EN";
             break;
         case CALL_TOKEN:
-            LOG_C(EVERYTHING, "CALL_TOKEN ");
+            name = "CALL";
             break;
-
+        case END_OF_SESSION_TOKEN:
+            name = "EOS";
+            break;
         default:
-            LOG_C(EVERYTHING, "%02x ", response[x]);
+            name = NULL;
             break;
+        }
+        if (name) {
+            LOG_C(EVERYTHING, "%02x[%s] ", response[x], name);
+        } else {
+            LOG_C(EVERYTHING, "%02x ", response[x]);
         }
     }
     LOG_C(EVERYTHING, "\n");
