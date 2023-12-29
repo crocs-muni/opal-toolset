@@ -1,12 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-#include <argp.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-
-#include "utils.h"
 #include "common.h"
+#include "utils.h"
+#include <argp.h>
 
 #define MAIN_DOC_STRING                                                                                                \
     "        device               File of Opal-compliant disk\n"                                                       \

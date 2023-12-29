@@ -1,22 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-#include <argp.h>
+#include "common.h"
 #include <errno.h>
 #include <fcntl.h>
-#include <linux/fscrypt.h>
 #include <linux/nvme_ioctl.h>
 #include <scsi/sg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <time.h>
 #include <unistd.h>
-#include <stdarg.h>
-
-#include "common.h"
 
 enum log_level current_log_level = ERROR;
 

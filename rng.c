@@ -3,6 +3,9 @@
 #include "common.h"
 #include "utils.h"
 #include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <argp.h>
 
 #define MAIN_DOC_STRING "\n        DEVICE               File of Opal-compliant disk\n"
 

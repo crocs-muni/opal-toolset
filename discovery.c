@@ -2,6 +2,8 @@
 
 #include "common.h"
 #include "utils.h"
+#include <ctype.h>
+#include <errno.h>
 #include <libudev.h>
 
 #define TOOL_VERSION 1

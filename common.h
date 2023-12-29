@@ -3,22 +3,12 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-#include <argp.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <linux/fscrypt.h>
-#include <linux/nvme_ioctl.h>
-#include <scsi/sg.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <time.h>
-#include <unistd.h>
-#include <stdarg.h>
+#include <stdint.h>
 #include <stdbool.h>
+#include <inttypes.h>
 #include "bitops.h"
 
 #define UCHR(x) (const unsigned char*)(x)

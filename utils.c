@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-#include "utils.h"
 #include "common.h"
-#include <inttypes.h>
+#include "utils.h"
 
 static int generate_locking_range_set_command(struct disk_device *dev, unsigned char *buffer, size_t *i,
                                               unsigned char locking_range, uint64_t range_start, uint64_t range_length,
