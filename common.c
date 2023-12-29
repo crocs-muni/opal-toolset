@@ -565,6 +565,8 @@ int do_level_0_discovery(struct disk_device *dev)
     int err = 0;
     uint8_t response[2048] = { 0 };
 
+    LOG(INFO, "Sending discovery0 command.\n");
+
     if ((err = trusted_command(dev, response, sizeof(response), IF_RECV, TCG_LEVEL_0_DISCOVERY_PROTOCOL_ID,
                                TCG_LEVEL_0_DISCOVERY_COMID))) {
         return err;
