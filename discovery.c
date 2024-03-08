@@ -568,8 +568,15 @@ static void crawl_cb_save_row(unsigned char *response, size_t last, void *data)
     */
     struct crawl_cb_save_row_data *collector = data;
 
+    /* Seen in some devices. */
+    if (response[0] == START_LIST_TOKEN && response[1] == CALL_TOKEN) {
+        LOG(INFO, "Bad table row.\n");
+        return;
+    }
+
     if (response[0] != START_LIST_TOKEN || response[1] != START_LIST_TOKEN) {
         LOG(ERROR, "Found unexpected token.\n");
+        return;
     }
     for (size_t i = 2; i < last; ++i) {
         if (response[i] == END_LIST_TOKEN) {
