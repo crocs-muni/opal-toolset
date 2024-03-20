@@ -8,6 +8,9 @@
 
 #define TOOL_VERSION 1
 
+#define QUOTE(name) #name
+#define STR(macro) QUOTE(macro)
+
 enum selection {
     SELECT_EVERYTHING = 0,
     SELECT_METAINFORMATION = 1,
@@ -832,9 +835,10 @@ static int print_discovery(struct disk_device *dev, int selection)
 
     print_comma_start(&first);
     printf("\"Metadata\": {\n"
-           "  \"Version\": \"%i\"\n"
+           "  \"Version\": \"%i\",\n"
+           "  \"Commit\": \"%s\"\n"
            "}",
-           TOOL_VERSION);
+           TOOL_VERSION, STR(GIT_VERSION));
 
     print_comma_start(&first);
     printf("\"Identify\": {\n");
