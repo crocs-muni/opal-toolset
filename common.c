@@ -6,6 +6,7 @@
 #include <linux/nvme_ioctl.h>
 #include <scsi/sg.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 enum log_level current_log_level = ERROR;
@@ -1078,6 +1079,9 @@ cleanup:
 
 int disk_device_open(struct disk_device *dev, const char *file, bool use_scsi_sec)
 {
+    int fd = -1;
+    struct stat st;
+
     memset(dev, 0, sizeof(struct disk_device));
 
     if (!strncmp(file, "/dev/nvme", 9))
@@ -1088,10 +1092,20 @@ int disk_device_open(struct disk_device *dev, const char *file, bool use_scsi_se
         dev->type = SATA;
 
     /* For ioctl access read-only is enough */
-    if ((dev->fd = open(file, O_RDONLY)) == -1) {
-        LOG(ERROR, "Cannot open file '%s': %s\n", file, strerror(errno));
+    if ((fd = open(file, O_RDONLY)) == -1) {
+        LOG(ERROR, "Cannot open '%s': %s\n", file, strerror(errno));
         return 1;
     }
+
+    if (fstat(fd, &st) || !S_ISBLK(st.st_mode)) {
+        LOG(ERROR, "Parameter '%s' is not a block device.\n", file);
+        if (dev->type == NVME)
+            LOG(ERROR, "Use /dev/nvmeXnY (block device) not /dev/nvmeX (NVMe controller node).\n");
+        close(fd);
+        return 1;
+    }
+
+    dev->fd = fd;
 
     if (dev->name)
         free(dev->name);
