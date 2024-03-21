@@ -457,6 +457,17 @@ static int print_property(struct udev_device *dev, const char *prop, const char 
     return 0;
 }
 
+static int print_sysattr(struct udev_device *dev, const char *sysattr, const char *desc)
+{
+    const char *data = udev_device_get_sysattr_value(dev, sysattr);
+
+    if (!data)
+        return 1;
+
+    printf("  \"%s\": \"%s\",\n", desc, data);
+    return 0;
+}
+
 static int print_udev_identify(const char *name)
 {
     struct udev *udev;
@@ -479,6 +490,10 @@ static int print_udev_identify(const char *name)
     if (print_property(dev, "ID_VENDOR_ENC", "Vendor"))
         print_property(dev, "ID_VENDOR", "Vendor");
     print_property(dev, "ID_SERIAL", "Serial number long");
+    print_sysattr(dev, "size", "Size bytes");
+    print_sysattr(dev, "queue/hw_sector_size", "HW sector bytes");
+    print_sysattr(dev, "queue/logical_block_size", "Logical block bytes");
+    print_sysattr(dev, "queue/physical_block_size", "Physical block bytes");
     printf("  \"Source\": \"udev\"\n");
 
     udev_device_unref(dev);
