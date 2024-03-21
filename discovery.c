@@ -474,11 +474,14 @@ static int print_udev_identify(const char *name)
     struct udev_device *dev;
 
     udev = udev_new();
-    if (!udev)
+    if (!udev) {
+        printf("  \"Source\": \"udev n/a\"\n");
         return -ENODEV;
+    }
 
     dev = udev_device_new_from_subsystem_sysname(udev, "block", name);
     if (!dev) {
+        printf("  \"Source\": \"udev block n/a\"\n");
         udev_unref(udev);
         return -ENODEV;
     }
