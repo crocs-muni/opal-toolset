@@ -468,6 +468,27 @@ static int print_sysattr_int(struct udev_device *dev, const char *sysattr, const
     return 0;
 }
 
+static int print_sysattr_size(struct udev_device *dev, const char *desc)
+{
+    uint64_t size_bytes;
+    unsigned long long ull;
+    char *end;
+
+    const char *data = udev_device_get_sysattr_value(dev, "size");
+
+    if (!data)
+        return 1;
+
+    ull = strtoull(data, &end, 10);
+    if (*end || !*data || errno == ERANGE)
+       return 1;
+
+    size_bytes = (uint64_t)ull * 512;
+
+    printf("  \"%s\": %" PRIu64 ",\n", desc, size_bytes);
+    return 0;
+}
+
 static int print_udev_identify(const char *name)
 {
     struct udev *udev;
@@ -493,7 +514,7 @@ static int print_udev_identify(const char *name)
     if (print_property(dev, "ID_VENDOR_ENC", "Vendor"))
         print_property(dev, "ID_VENDOR", "Vendor");
     print_property(dev, "ID_SERIAL", "Serial number long");
-    print_sysattr_int(dev, "size", "Size bytes");
+    print_sysattr_size(dev, "Size bytes");
     print_sysattr_int(dev, "queue/hw_sector_size", "HW sector bytes");
     print_sysattr_int(dev, "queue/logical_block_size", "Logical block bytes");
     print_sysattr_int(dev, "queue/physical_block_size", "Physical block bytes");
