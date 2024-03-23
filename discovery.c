@@ -102,6 +102,21 @@ static void print_level_0_discovery(struct disk_device *dev)
                be64_to_cpu(body->alignment_granularity), be64_to_cpu(body->lowest_alignment_LBA));
     }
 
+    if (dev->features.ns_geometry.shared.feature_code) {
+        struct level_0_discovery_geometry_feature *body = &dev->features.geometry;
+
+        print_comma_start(&first);
+        printf("  \"Namespace Geometry Feature\": {\n"
+               "    \"Version\": %i,\n"
+               "    \"ALIGN\": %i,\n"
+               "    \"LogicalBlockSize\": %i,\n"
+               "    \"AlignmentGranularity\": %li,\n"
+               "    \"LowestAlignedLBA\": %li\n"
+               "  }",
+               body->shared.descriptor_version, body->align, be32_to_cpu(body->logical_block_size),
+               be64_to_cpu(body->alignment_granularity), be64_to_cpu(body->lowest_alignment_LBA));
+    }
+
     if (dev->features.opal2.shared.feature_code) {
         struct level_0_discovery_opal_2_feature *body = &dev->features.opal2;
 
@@ -232,13 +247,45 @@ static void print_level_0_discovery(struct disk_device *dev)
                be16_to_cpu(body->data_removal_time_for_supported_data_removal_mechanism[5]));
     }
 
+    if (dev->features.ns_locking.shared.feature_code) {
+        struct level_0_discovery_ns_locking_feature *body = &dev->features.ns_locking;
+
+        print_comma_start(&first);
+        printf("  \"Namespace Locking Feature\": {\n"
+               "    \"Version\": %i,\n"
+               "    \"SUM_C\": %i,\n"
+               "    \"Range_P\": %i,\n"
+               "    \"Range_C\": %i,\n"
+               "    \"Maximum Key Count\": %i,\n"
+               "    \"Unused Key Count\": %i,\n"
+               "    \"Maximum Ranges Per Namespace\": %i\n"
+               "  }",
+               body->shared.descriptor_version, body->sum_c, body->range_p, body->range_c,
+               be32_to_cpu(body->maximum_key_count), be32_to_cpu(body->unused_key_count),
+               be32_to_cpu(body->maximum_ranges_per_ns));
+    }
+
+    if (dev->features.siis.shared.feature_code) {
+        struct level_0_discovery_siis_feature *body = &dev->features.siis;
+
+        print_comma_start(&first);
+        printf("  \"SIIS Feature\": {\n"
+               "    \"Version\": %i,\n"
+               "    \"SIIS Revision\": %i,\n"
+               "    \"Key Change Zone Behaviour\": %i,\n"
+               "    \"Identifier Usage Scope\": %i\n"
+               "  }",
+               body->shared.descriptor_version, body->siis_revision,
+               body->key_change_zone_behavior, body->identifier_usage_scope);
+    }
+
     for (size_t i = 0; i < dev->features.unknown_len;) {
         struct level_0_discovery_feature_shared *header =
                 (struct level_0_discovery_feature_shared *)(dev->features.unknown + i);
         size_t body_len = header->length + 4;
 
         print_comma_start(&first);
-        printf("  \"0x%x\": { \"data\": \"0x", header->feature_code);
+        printf("  \"0x%x\": { \"data\": \"0x", be16_to_cpu(header->feature_code));
         for (size_t j = 0; j < body_len; ++j) {
             printf("%02x", ((unsigned char *)header)[j]);
         }

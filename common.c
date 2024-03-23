@@ -72,6 +72,17 @@ static int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, 
 {
     int err = 0;
 
+    /*
+     * Core spec feature codes
+     * 0x0000          reserved
+     * 0x0001          TPer
+     * 0x0002          locking
+     * 0x0003 – 0x00ff reserved
+     * 0x0100 – 0x03ff SSCs
+     * 0x0400 - 0xbfff reserved
+     * 0xC000 - 0xffff vendor specific
+     */
+
     if (feature_code == 0x0001) {
         struct level_0_discovery_tper_feature *body = data;
         dev->features.tper = *body;
@@ -81,10 +92,11 @@ static int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, 
     } else if (feature_code == 0x0003) {
         struct level_0_discovery_geometry_feature *body = data;
         dev->features.geometry = *body;
-    } else if (feature_code == 0x0203) {
-        struct level_0_discovery_opal_2_feature *body = data;
-        dev->features.opal2 = *body;
-        dev->base_com_id = be16_to_cpu(body->base_comID);
+    // } else if (feature_code == 0x0004) { /* Secure messaging (TLS) */
+    } else if (feature_code == 0x0005) {
+        struct level_0_discovery_siis_feature *body = data;
+        dev->features.siis = *body;
+    // } else if (feature_code == 0x0100) { /* Enterprise SSC */
     } else if (feature_code == 0x0200) {
         struct level_0_discovery_opal_1_feature *body = data;
         dev->features.opal1 = *body;
@@ -94,16 +106,33 @@ static int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, 
     } else if (feature_code == 0x0202) {
         struct level_0_discovery_data_store_feature *body = data;
         dev->features.data_store = *body;
-    } else if (feature_code == 0x0303 || feature_code == 0x0302) {
+    } else if (feature_code == 0x0203) {
+        struct level_0_discovery_opal_2_feature *body = data;
+        dev->features.opal2 = *body;
+        dev->base_com_id = be16_to_cpu(body->base_comID);
+    // } else if (feature_code == 0x0301) { /* Opalite SSC */
+    } else if (feature_code == 0x0302 || feature_code == 0x0303) {
         struct level_0_discovery_pyrite_feature *body = data;
         dev->features.pyrite = *body;
         dev->base_com_id = be16_to_cpu(body->base_comID);
+    // } else if (feature_code == 0x0304) { /* Ruby SSC */
+    // } else if (feature_code == 0x0305) { /* Key per IO SSC */
+    // } else if (feature_code == 0x0401) { /* Locking LBA Ranges Control */
     } else if (feature_code == 0x0402) {
         struct level_0_discovery_block_sid_authentication_feature *body = data;
         dev->features.block_sid_authentication = *body;
+    } else if (feature_code == 0x0403) {
+        struct level_0_discovery_ns_locking_feature *body = data;
+        dev->features.ns_locking = *body;
     } else if (feature_code == 0x0404) {
         struct level_0_discovery_supported_data_removal_mechanism_feature *body = data;
         dev->features.supported_data_removal_mechanism = *body;
+    } else if (feature_code == 0x0405) {
+        struct level_0_discovery_ns_geometry_feature *body = data;
+        dev->features.ns_geometry = *body;
+    // } else if (feature_code == 0x0407) { /* Shadow MBR for multiple namespaces */
+    // } else if (feature_code == 0x0409) { /* CPIN enhancements */
+    // } else if (feature_code == 0x040a) { /* Namespace Key Per I/O Capabilities */
     } else {
         struct level_0_discovery_feature_shared *body = data;
 

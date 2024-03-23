@@ -386,6 +386,38 @@ struct level_0_discovery_supported_data_removal_mechanism_feature {
     uint8_t reserved_3[16];
 }  __attribute__ ((packed));
 
+struct level_0_discovery_ns_locking_feature {
+    struct level_0_discovery_feature_shared shared;
+    uint8_t reserved_1 : 5;
+    uint8_t sum_c : 1;
+    uint8_t range_p : 1;
+    uint8_t range_c : 1;
+    uint8_t reserved_2[3];
+    uint32_t maximum_key_count;
+    uint32_t unused_key_count;
+    uint32_t maximum_ranges_per_ns;
+}  __attribute__ ((packed));
+
+struct level_0_discovery_ns_geometry_feature {
+    struct level_0_discovery_feature_shared shared;
+    uint8_t align : 1;
+    uint8_t reserved_2 : 7;
+    uint8_t reserved_3[7];
+    uint32_t logical_block_size;
+    uint64_t alignment_granularity;
+    uint64_t lowest_alignment_LBA;
+}  __attribute__ ((packed));
+
+/* Storage Interface Interactions Specification (SIIS) */
+struct level_0_discovery_siis_feature {
+    struct level_0_discovery_feature_shared shared;
+    uint8_t siis_revision;
+    uint8_t key_change_zone_behavior : 1;
+    uint8_t identifier_usage_scope : 2;
+    uint8_t reserved_1 : 5;
+    uint8_t reserved_2[10];
+}  __attribute__ ((packed));
+
 #define DISK_DEVICE_UNKNOWN_FEATURE_MAX_LENGTH 1024
 struct disk_device {
     int fd;
@@ -411,6 +443,9 @@ struct disk_device {
         struct level_0_discovery_block_sid_authentication_feature block_sid_authentication;
         struct level_0_discovery_pyrite_feature pyrite;
         struct level_0_discovery_supported_data_removal_mechanism_feature supported_data_removal_mechanism;
+        struct level_0_discovery_ns_locking_feature ns_locking;
+        struct level_0_discovery_ns_geometry_feature ns_geometry;
+        struct level_0_discovery_siis_feature siis;
         uint8_t unknown[DISK_DEVICE_UNKNOWN_FEATURE_MAX_LENGTH];
         size_t unknown_len;
     } features;
