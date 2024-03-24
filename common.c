@@ -639,6 +639,9 @@ int do_level_0_discovery(struct disk_device *dev)
         return err;
     }
 
+    /* Wipe previous response data */
+    memset(&dev->features, 0, sizeof(dev->features));
+
     if ((err = tcg_discovery_0_process_response(dev, response))) {
         return err;
     }
