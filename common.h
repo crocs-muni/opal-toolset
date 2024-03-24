@@ -441,7 +441,8 @@ struct disk_device {
         struct level_0_discovery_single_user_mode_feature single_user_mode;
         struct level_0_discovery_data_store_feature data_store;
         struct level_0_discovery_block_sid_authentication_feature block_sid_authentication;
-        struct level_0_discovery_pyrite_feature pyrite;
+        struct level_0_discovery_pyrite_feature pyrite2;
+        struct level_0_discovery_pyrite_feature pyrite1;
         struct level_0_discovery_supported_data_removal_mechanism_feature supported_data_removal_mechanism;
         struct level_0_discovery_ns_locking_feature ns_locking;
         struct level_0_discovery_ns_geometry_feature ns_geometry;

@@ -111,9 +111,13 @@ static int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, 
         dev->features.opal2 = *body;
         dev->base_com_id = be16_to_cpu(body->base_comID);
     // } else if (feature_code == 0x0301) { /* Opalite SSC */
-    } else if (feature_code == 0x0302 || feature_code == 0x0303) {
+    } else if (feature_code == 0x0302) {
         struct level_0_discovery_pyrite_feature *body = data;
-        dev->features.pyrite = *body;
+        dev->features.pyrite1 = *body;
+        dev->base_com_id = be16_to_cpu(body->base_comID);
+    } else if (feature_code == 0x0303) {
+        struct level_0_discovery_pyrite_feature *body = data;
+        dev->features.pyrite2 = *body;
         dev->base_com_id = be16_to_cpu(body->base_comID);
     // } else if (feature_code == 0x0304) { /* Ruby SSC */
     // } else if (feature_code == 0x0305) { /* Key per IO SSC */

@@ -184,7 +184,19 @@ static void print_level_0_discovery(struct disk_device *dev)
         struct level_0_discovery_block_sid_authentication_feature *body = &dev->features.block_sid_authentication;
 
         print_comma_start(&first);
-        printf("  \"Block SID Authentication Feature\": {\n"
+        if(body->shared.descriptor_version == 0x1){
+            printf("  \"Block SID Authentication Feature\": {\n"
+               "    \"Version\": %i,\n"
+               "    \"SID Authentication Blocked State\": %i,\n"
+               "    \"SID Value State\": %i,\n"
+               "    \"Hardware Reset\": %i\n"
+               "  }",
+               body->shared.descriptor_version, body->sid_authentication_blocked_state, body->sid_value_state,
+               body->hardware_reset);
+        }
+        // else if instead of else in case TCG decide to add more params
+        else if(body->shared.descriptor_version == 0x2){
+            printf("  \"Block SID Authentication Feature\": {\n"
                "    \"Version\": %i,\n"
                "    \"Locking SP Freeze Lock State \": %i,\n"
                "    \"Locking SP Freeze Lock supported\": %i,\n"
@@ -195,13 +207,29 @@ static void print_level_0_discovery(struct disk_device *dev)
                body->shared.descriptor_version, body->locking_sp_freeze_lock_state,
                body->locking_sp_freeze_lock_supported, body->sid_authentication_blocked_state, body->sid_value_state,
                body->hardware_reset);
+        }
     }
 
-    if (dev->features.pyrite.shared.feature_code) {
-        struct level_0_discovery_pyrite_feature *body = &dev->features.pyrite;
+    if (dev->features.pyrite1.shared.feature_code) {
+        struct level_0_discovery_pyrite_feature *body = &dev->features.pyrite1;
 
         print_comma_start(&first);
         printf("  \"Pyrite SSC Feature Descriptor\": {\n"
+               "    \"Version\": %i,\n"
+               "    \"Base ComID\": %i,\n"
+               "    \"Number of ComIDs\": %i,\n"
+               "    \"Initial C_PIN_SID PIN Indicator\": %i,\n"
+               "    \"Behavior of C_PIN_SID PIN upon TPer Revert\": %i\n"
+               "  }",
+               body->shared.descriptor_version, be16_to_cpu(body->base_comID),
+               be16_to_cpu(body->number_of_comIDs), body->initial_pin_indicator, body->behavior_of_pin_upon_revert);
+    }
+
+    if (dev->features.pyrite2.shared.feature_code) {
+        struct level_0_discovery_pyrite_feature *body = &dev->features.pyrite2;
+
+        print_comma_start(&first);
+        printf("  \"Pyrite SSC V2 Feature Descriptor\": {\n"
                "    \"Version\": %i,\n"
                "    \"Base ComID\": %i,\n"
                "    \"Number of ComIDs\": %i,\n"
