@@ -70,8 +70,6 @@ const char *error_to_string(enum MethodStatusCode msc)
 
 static int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, int feature_code)
 {
-    int err = 0;
-
     /*
      * Core spec feature codes
      * 0x0000          reserved
@@ -143,12 +141,14 @@ static int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, 
         if (dev->features.unknown_len + body->length + 4 < DISK_DEVICE_UNKNOWN_FEATURE_MAX_LENGTH) {
             memcpy(dev->features.unknown + dev->features.unknown_len, data, body->length + 4);
         } else {
-            LOG(ERROR, "Too many feature descriptors found, ignoring the rest.\n");
+            LOG(ERROR, "Too many feature descriptors found, ignoring the rest. (flen:%zu, blen:%u)\n",
+                dev->features.unknown_len, body->length);
+            return 1;
         }
         dev->features.unknown_len += body->length + 4;
     }
 
-    return err;
+    return 0;
 }
 
 static int tcg_discovery_0_process_response(struct disk_device *dev, void *data)
