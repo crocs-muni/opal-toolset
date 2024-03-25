@@ -184,7 +184,7 @@ static void print_level_0_discovery(struct disk_device *dev)
         struct level_0_discovery_block_sid_authentication_feature *body = &dev->features.block_sid_authentication;
 
         print_comma_start(&first);
-        if(body->shared.descriptor_version == 0x1){
+        if (body->shared.descriptor_version == 0x1){
             printf("  \"Block SID Authentication Feature\": {\n"
                "    \"Version\": %i,\n"
                "    \"SID Authentication Blocked State\": %i,\n"
@@ -195,7 +195,7 @@ static void print_level_0_discovery(struct disk_device *dev)
                body->hardware_reset);
         }
         // else if instead of else in case TCG decide to add more params
-        else if(body->shared.descriptor_version == 0x2){
+        else if (body->shared.descriptor_version == 0x2){
             printf("  \"Block SID Authentication Feature\": {\n"
                "    \"Version\": %i,\n"
                "    \"Locking SP Freeze Lock State \": %i,\n"
