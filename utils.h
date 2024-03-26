@@ -33,6 +33,8 @@ int psid_revert(struct disk_device *dev, const unsigned char *psid, size_t psid_
 
 int get_random(struct disk_device *dev, unsigned char *output, size_t output_len);
 
+int get_random_session(struct disk_device *dev, unsigned char *output, size_t output_len);
+
 int regenerate_key(struct disk_device *dev, unsigned char locking_range,
                    unsigned char *admin_pin, size_t admin_pin_len);
 

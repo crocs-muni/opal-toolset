@@ -551,6 +551,55 @@ cleanup:
     return err;
 }
 
+int get_random_session(struct disk_device *dev, unsigned char *output, size_t output_len)
+{
+    int err;
+    unsigned char rng_buffer[RANDOM_REQUEST_SIZE] = { 0 };
+    unsigned char response[512] = { 0 };
+    unsigned char command[512] = { 0 };
+    size_t command_len = 0, done, offset, len, remaining;
+
+    /*
+    ThisSP.Random[
+    Count : uinteger,
+    BufferOut = cell_block ]
+    =>
+    [ Result : bytes ]
+    */
+    prepare_method(command, &command_len, dev, THISSP, METHOD_RANDOM_UID);
+    tiny_atom(command, &command_len, 0, RANDOM_REQUEST_SIZE); // Count
+    finish_method(command, &command_len);
+
+    for (done = 0; done < output_len && !quit; done += RANDOM_REQUEST_SIZE) {
+
+        if ((err = invoke_method(dev, command, command_len, response, sizeof(response)))) {
+            LOG(ERROR, "Failed to get random data from the device.\n");
+            return -1;
+        }
+
+        if ((err = skip_to_parameter(response, &offset, 0, 0))) {
+            LOG(ERROR, "Received unexpected token.\n");
+            return -1;
+        }
+
+        if ((err = parse_bytes(response, &offset, rng_buffer, sizeof(rng_buffer), &len))) {
+            LOG(ERROR, "Received unexpected token.\n");
+            return -1;
+        }
+
+        remaining = output_len - done;
+        memcpy(output, rng_buffer, remaining > RANDOM_REQUEST_SIZE ? RANDOM_REQUEST_SIZE : remaining);
+        output += RANDOM_REQUEST_SIZE;
+    }
+
+    if (quit) {
+        LOG(ERROR, "Interrupted by a signal.\n");
+        return -1;
+    }
+
+    return 0;
+}
+
 int regenerate_key(struct disk_device *dev, unsigned char locking_range, unsigned char *admin_pin,
                    size_t admin_pin_len)
 {

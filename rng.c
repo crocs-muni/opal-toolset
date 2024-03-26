@@ -5,6 +5,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <time.h>
 #include <argp.h>
 
 #define MAIN_DOC_STRING "\n        DEVICE               File of Opal-compliant disk\n"
@@ -135,12 +138,24 @@ static size_t write_buffer(int fd, const void *buf, size_t length)
         return write_size;
 }
 
+static long timespec_ms(struct timespec *start, struct timespec *end)
+{
+	return (end->tv_sec - start->tv_sec) * 1000 +
+	        (end->tv_nsec - start->tv_nsec) / (1000 * 1000);
+}
+
+static double timespec_sec(struct timespec *start, struct timespec *end)
+{
+    return timespec_ms(start, end) / 1000.;
+}
+
 int main(int argc, char **argv)
 {
     struct disk_device dev = { 0 };
     int fd = -1, err = 1, fail_repeat_count = 0;
     unsigned char *buffer = NULL;
     size_t current_req_bytes, bytes_read = 0, written;
+    struct timespec tstart, tend;
 
     argp_parse(&argp, argc, argv, 0, 0, &args);
 
@@ -180,16 +195,28 @@ int main(int argc, char **argv)
 
     set_int_handler(0);
 
+    if ((err = start_session(&dev, ADMIN_SP_UID, ANYBODY_USER_ID, NULL, 0))) {
+        LOG(ERROR, "Failed to initialise session.\n");
+        goto fail;
+    }
+
+    if (clock_gettime(CLOCK_MONOTONIC_RAW, &tstart)) {
+        LOG(ERROR, "Cannot get time.\n");
+        goto fail;
+    }
+
     err = 0;
     while (bytes_read < args.req_bytes || quit) {
         memset(buffer, 0, args.chunk_size);
         current_req_bytes = min(args.req_bytes - bytes_read, args.chunk_size);
 
-        if ((err = get_random(&dev, buffer, current_req_bytes))) {
+        if ((err = get_random_session(&dev, buffer, current_req_bytes))) {
             LOG(ERROR, "Failed to get random data.\n");
             if (++fail_repeat_count < 5 && !quit) {
+                close_session(&dev);
                 sleep(1);
-                continue;
+                if (!start_session(&dev, ADMIN_SP_UID, ANYBODY_USER_ID, NULL, 0))
+                    continue;
             }
             err = 1;
             break;
@@ -221,7 +248,11 @@ int main(int argc, char **argv)
         bytes_read += current_req_bytes;
     }
 
+    if (!clock_gettime(CLOCK_MONOTONIC_RAW, &tend))
+        printf("Time %.2f s; %zu bytes written; %.2f bytes/s\n",
+               timespec_sec(&tstart, &tend), bytes_read, bytes_read / timespec_sec(&tstart, &tend));
 fail:
+    close_session(&dev);
     if (fd != -1)
         close(fd);
     disk_device_close(&dev);
