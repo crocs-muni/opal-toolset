@@ -121,7 +121,7 @@ static void print_level_0_discovery(struct disk_device *dev)
         struct level_0_discovery_opal_2_feature *body = &dev->features.opal2;
 
         print_comma_start(&first);
-        printf("  \"Opal SSC V2.00 Feature\": {\n"
+        printf("  \"Opal SSC V2 Feature\": {\n"
                "    \"Version\": %i,\n"
                "    \"Minor Version\": %i,\n"
                "    \"Base ComID\": %i,\n"
@@ -143,7 +143,7 @@ static void print_level_0_discovery(struct disk_device *dev)
         struct level_0_discovery_opal_1_feature *body = &dev->features.opal1;
 
         print_comma_start(&first);
-        printf("  \"Opal SSC V1.00 Feature Descriptor\": {\n"
+        printf("  \"Opal SSC V1 Feature\": {\n"
                "    \"Version\": %i,\n"
                "    \"Base ComID\": %i,\n"
                "    \"Number of ComIDs\": %i,\n"
@@ -215,7 +215,7 @@ static void print_level_0_discovery(struct disk_device *dev)
         struct level_0_discovery_pyrite_feature *body = &dev->features.pyrite1;
 
         print_comma_start(&first);
-        printf("  \"Pyrite SSC Feature Descriptor\": {\n"
+        printf("  \"Pyrite SSC V1 Feature\": {\n"
                "    \"Version\": %i,\n"
                "    \"Base ComID\": %i,\n"
                "    \"Number of ComIDs\": %i,\n"
@@ -230,7 +230,7 @@ static void print_level_0_discovery(struct disk_device *dev)
         struct level_0_discovery_pyrite_feature *body = &dev->features.pyrite2;
 
         print_comma_start(&first);
-        printf("  \"Pyrite SSC V2 Feature Descriptor\": {\n"
+        printf("  \"Pyrite SSC V2 Feature\": {\n"
                "    \"Version\": %i,\n"
                "    \"Base ComID\": %i,\n"
                "    \"Number of ComIDs\": %i,\n"
@@ -246,7 +246,7 @@ static void print_level_0_discovery(struct disk_device *dev)
                 &dev->features.supported_data_removal_mechanism;
 
         print_comma_start(&first);
-        printf("  \"Supported Data Removal Mechanism Feature Descriptor\": {\n"
+        printf("  \"Supported Data Removal Mechanism Feature\": {\n"
                "    \"Version\": %i,\n"
                "    \"Data Removal Operation Processing\": %i,\n"
                "    \"Supported Data Removal Mechanism\": %i,\n"
