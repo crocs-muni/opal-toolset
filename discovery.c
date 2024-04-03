@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <libudev.h>
 
-#define TOOL_VERSION 1
+#define TOOL_VERSION 2
 
 #define QUOTE(name) #name
 #define STR(macro) QUOTE(macro)
