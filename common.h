@@ -272,7 +272,7 @@ struct level_0_discovery_header {
 
 struct level_0_discovery_feature_shared {
     uint16_t feature_code;
-    uint8_t reserved : 4;
+    uint8_t reserved_minor : 4;
     uint8_t descriptor_version : 4;
     uint8_t length;
 }  __attribute__ ((packed));

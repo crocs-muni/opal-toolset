@@ -132,7 +132,7 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"Initial C_PIN_SID PIN Indicator\": %i,\n"
                "    \"Behavior of C_PIN_SID PIN upon TPer Revert\": %i\n"
                "  }",
-               body->shared.descriptor_version, body->shared.reserved, be16_to_cpu(body->base_comID),
+               body->shared.descriptor_version, body->shared.reserved_minor, be16_to_cpu(body->base_comID),
                be16_to_cpu(body->number_of_comIDs), body->range_crossing_behaviour,
                be16_to_cpu(body->number_of_locking_admin_authorities_supported),
                be16_to_cpu(body->number_of_locking_user_authorities_supported), body->initial_pin_indicator,
@@ -177,7 +177,7 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"Maximum total size of DataStore tables\": %i,\n"
                "    \"DataStore table size alignment\": %i\n"
                "  }",
-               body->shared.descriptor_version, body->shared.reserved, be16_to_cpu(body->maximum_number_of_tables),
+               body->shared.descriptor_version, body->shared.reserved_minor, be16_to_cpu(body->maximum_number_of_tables),
                be32_to_cpu(body->maximum_total_size_of_tables), be32_to_cpu(body->table_size_alignment));
     }
 
@@ -290,7 +290,7 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"Unused Key Count\": %i,\n"
                "    \"Maximum Ranges Per Namespace\": %i\n"
                "  }",
-               body->shared.descriptor_version, body->shared.reserved, body->sum_c, body->range_p, body->range_c,
+               body->shared.descriptor_version, body->shared.reserved_minor, body->sum_c, body->range_p, body->range_c,
                be32_to_cpu(body->maximum_key_count), be32_to_cpu(body->unused_key_count),
                be32_to_cpu(body->maximum_ranges_per_ns));
     }
