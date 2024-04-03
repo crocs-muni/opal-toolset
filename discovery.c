@@ -122,8 +122,8 @@ static void print_level_0_discovery(struct disk_device *dev)
 
         print_comma_start(&first);
         printf("  \"Opal SSC V2.00 Feature\": {\n"
-               "    \"Feature Descriptor Version Number\": %i,\n"
-               "    \"SSC Minor Version Number\": %i,\n"
+               "    \"Version\": %i,\n"
+               "    \"Minor Version\": %i,\n"
                "    \"Base ComID\": %i,\n"
                "    \"Number of ComIDs\": %i,\n"
                "    \"Range Crossing Behavior\": %i,\n"
@@ -172,11 +172,12 @@ static void print_level_0_discovery(struct disk_device *dev)
         print_comma_start(&first);
         printf("  \"DataStore Table Feature\": {\n"
                "    \"Version\": %i,\n"
+               "    \"Minor Version\": %i,\n"
                "    \"Maximum number of DataStore tables\": %i,\n"
                "    \"Maximum total size of DataStore tables\": %i,\n"
                "    \"DataStore table size alignment\": %i\n"
                "  }",
-               body->shared.descriptor_version, be16_to_cpu(body->maximum_number_of_tables),
+               body->shared.descriptor_version, body->shared.reserved, be16_to_cpu(body->maximum_number_of_tables),
                be32_to_cpu(body->maximum_total_size_of_tables), be32_to_cpu(body->table_size_alignment));
     }
 
@@ -281,6 +282,7 @@ static void print_level_0_discovery(struct disk_device *dev)
         print_comma_start(&first);
         printf("  \"Namespace Locking Feature\": {\n"
                "    \"Version\": %i,\n"
+               "    \"Minor Version\": %i,\n"
                "    \"SUM_C\": %i,\n"
                "    \"Range_P\": %i,\n"
                "    \"Range_C\": %i,\n"
@@ -288,7 +290,7 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"Unused Key Count\": %i,\n"
                "    \"Maximum Ranges Per Namespace\": %i\n"
                "  }",
-               body->shared.descriptor_version, body->sum_c, body->range_p, body->range_c,
+               body->shared.descriptor_version, body->shared.reserved, body->sum_c, body->range_p, body->range_c,
                be32_to_cpu(body->maximum_key_count), be32_to_cpu(body->unused_key_count),
                be32_to_cpu(body->maximum_ranges_per_ns));
     }
