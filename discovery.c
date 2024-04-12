@@ -71,7 +71,42 @@ static void print_level_0_discovery(struct disk_device *dev)
         struct level_0_discovery_lockin_feature *body = &dev->features.locking;
 
         print_comma_start(&first);
-        printf("  \"Locking Feature\": {\n"
+
+        switch (body->shared.descriptor_version)
+        {
+        case 0x1:
+            printf("  \"Locking Feature\": {\n"
+               "    \"Version\": %i,\n"
+               "    \"MBR Done\": %i,\n"
+               "    \"MBR Enabled\": %i,\n"
+               "    \"Media Encryption\": %i,\n"
+               "    \"Locked\": %i,\n"
+               "    \"Locking Enabled\": %i,\n"
+               "    \"Locking Supported\": %i\n"
+               "  }",
+               body->shared.descriptor_version,
+               body->MBR_done, body->MBR_enabled, body->media_encryption, body->locked, body->locking_enabled,
+               body->locking_supported);    
+            break;
+
+        case 0x2:
+            printf("  \"Locking Feature\": {\n"
+               "    \"Version\": %i,\n"
+               "    \"MBR Shadowing Not Supported\": %i,\n"
+               "    \"MBR Done\": %i,\n"
+               "    \"MBR Enabled\": %i,\n"
+               "    \"Media Encryption\": %i,\n"
+               "    \"Locked\": %i,\n"
+               "    \"Locking Enabled\": %i,\n"
+               "    \"Locking Supported\": %i\n"
+               "  }",
+               body->shared.descriptor_version, body->mbr_shadowing_not_supported,
+               body->MBR_done, body->MBR_enabled, body->media_encryption, body->locked, body->locking_enabled,
+               body->locking_supported);
+            break;
+
+        case 0x3:
+            printf("  \"Locking Feature\": {\n"
                "    \"Version\": %i,\n"
                "    \"HW Reset for LOR/DOR Supported\": %i,\n"
                "    \"MBR Shadowing Not Supported\": %i,\n"
@@ -85,6 +120,26 @@ static void print_level_0_discovery(struct disk_device *dev)
                body->shared.descriptor_version, body->hw_reset_for_lor_dor_supported, body->mbr_shadowing_not_supported,
                body->MBR_done, body->MBR_enabled, body->media_encryption, body->locked, body->locking_enabled,
                body->locking_supported);
+            break;
+
+        default:
+            printf("  \"Locking Feature\": {\n"
+               "    \"Version\": %i,\n"
+               "    \"HW Reset for LOR/DOR Supported\": %i,\n"
+               "    \"MBR Shadowing Not Supported\": %i,\n"
+               "    \"MBR Done\": %i,\n"
+               "    \"MBR Enabled\": %i,\n"
+               "    \"Media Encryption\": %i,\n"
+               "    \"Locked\": %i,\n"
+               "    \"Locking Enabled\": %i,\n"
+               "    \"Locking Supported\": %i\n"
+               "  }",
+               body->shared.descriptor_version, body->hw_reset_for_lor_dor_supported, body->mbr_shadowing_not_supported,
+               body->MBR_done, body->MBR_enabled, body->media_encryption, body->locked, body->locking_enabled,
+               body->locking_supported);
+            break;
+        }
+        
     }
 
     if (dev->features.geometry.shared.feature_code) {
