@@ -566,11 +566,11 @@ int invoke_method(struct disk_device *dev, unsigned char *buff_in, size_t buff_i
 {
     int err = 0;
 
-    if ((err = trusted_command(dev, buff_in, buff_in_len, IF_SEND, 0x01, dev->base_com_id))) {
+    if ((err = trusted_command(dev, buff_in, buff_in_len, IF_SEND, TCG_PROTOCOL_ID_1, dev->base_com_id))) {
         LOG(ERROR, "Failed to send command: %i\n", err);
         return err;
     }
-    if ((err = trusted_command(dev, buff_out, buff_out_len, IF_RECV, 0x01, dev->base_com_id))) {
+    if ((err = trusted_command(dev, buff_out, buff_out_len, IF_RECV, TCG_PROTOCOL_ID_1, dev->base_com_id))) {
         LOG(ERROR, "Failed to receive command: %i\n", err);
         return err;
     }
@@ -638,7 +638,7 @@ int do_level_0_discovery(struct disk_device *dev)
 
     LOG(INFO, "Sending discovery0 command.\n");
 
-    if ((err = trusted_command(dev, response, sizeof(response), IF_RECV, TCG_LEVEL_0_DISCOVERY_PROTOCOL_ID,
+    if ((err = trusted_command(dev, response, sizeof(response), IF_RECV, TCG_PROTOCOL_ID_1,
                                TCG_LEVEL_0_DISCOVERY_COMID))) {
         return err;
     }

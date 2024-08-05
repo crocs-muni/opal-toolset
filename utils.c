@@ -382,7 +382,7 @@ int tper_reset(struct disk_device *dev)
 
     LOG(INFO, "TPer reset\n");
 
-    if ((err = trusted_command(dev, buffer, sizeof(buffer), IF_SEND, 0x02, TPER_RESET_COMID))) {
+    if ((err = trusted_command(dev, buffer, sizeof(buffer), IF_SEND, TCG_PROTOCOL_ID_2, TPER_RESET_COMID))) {
         LOG(ERROR, "Failed to send programmatic reset.\n");
     }
 

@@ -158,7 +158,9 @@ enum TrustedCommandDirection {
     IF_SEND,
 };
 
-#define TCG_LEVEL_0_DISCOVERY_PROTOCOL_ID 0x01
+#define TCG_PROTOCOL_ID_1 0x01
+#define TCG_PROTOCOL_ID_2 0x02
+
 #define TCG_LEVEL_0_DISCOVERY_COMID 0x0001
 
 #define METHOD_PROPERTIES_UID UCHR("\x00\x00\x00\x00\x00\x00\xff\x01")
