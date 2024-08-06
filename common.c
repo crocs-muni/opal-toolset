@@ -11,6 +11,18 @@
 
 enum log_level current_log_level = ERROR;
 
+void LOG_HEX(const void *ptr, unsigned len)
+{
+    const char *buf = ptr;
+
+    for (int i = 0; i < len; i++) {
+        if (i && !(i % 16))
+            fprintf(stderr, "\n");
+        fprintf(stderr, "%02x", (unsigned char)buf[i]);
+    }
+    fprintf(stderr, "\n");
+}
+
 int hex_add(unsigned char *a, size_t a_len, size_t b)
 {
     size_t i = 0;

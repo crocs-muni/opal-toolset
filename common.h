@@ -21,19 +21,21 @@ enum log_level {
 extern enum log_level current_log_level;
 
 #define LOG(level, ...)                                                                                                \
-    {                                                                                                                  \
+    do {                                                                                                                  \
         if (level <= current_log_level) {                                                                              \
             fprintf(stderr, "[%i:" __FILE__ ":%s():%i] ", level, __PRETTY_FUNCTION__, __LINE__);                       \
             fprintf(stderr, __VA_ARGS__);                                                                              \
         }                                                                                                              \
-    }
+    } while (0)
 
 #define LOG_C(level, ...)                                                                                              \
-    {                                                                                                                  \
+    do {                                                                                                                  \
         if (level <= current_log_level) {                                                                              \
             fprintf(stderr, __VA_ARGS__);                                                                              \
         }                                                                                                              \
-    }
+    } while (0)
+
+void LOG_HEX(const void *ptr, unsigned len);
 
 /* interrupt handling */
 extern volatile int quit;
