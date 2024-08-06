@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+#include <unistd.h>
 #include "common.h"
 #include "utils.h"
 
@@ -387,6 +388,96 @@ int tper_reset(struct disk_device *dev)
     }
 
     return err;
+}
+
+int get_comid(struct disk_device *dev, int *comid)
+{
+    int err;
+    struct get_comid_response resp = {};
+
+    if ((err = trusted_command(dev, (uint8_t*)&resp, sizeof(resp), IF_RECV, TCG_PROTOCOL_ID_2, TCG_GET_COMID)))
+        LOG(ERROR, "Failed to Get ComID.\n");
+    else {
+        *comid = be16_to_cpu(resp.comid);
+        LOG(ERROR, "Get ComID 0x%04x\n", *comid);
+    }
+
+    return err;
+}
+
+int comid_valid(struct disk_device *dev, int comid)
+{
+    int err;
+    struct comid_valid_request rq = {
+        .request_code = cpu_to_be32(TCG_REQUEST_CODE_COMID_VALID)
+    };
+    struct comid_valid_response resp = { 0 };
+
+    if ((err = do_level_0_discovery(dev))) {
+        LOG(ERROR, "Failed to get ComID from Discovery0.\n");
+        return err;
+    }
+
+    LOG(INFO, "Commid valid, Base ComID 0x%04x (Ext ComID 0x%04x)\n", dev->base_com_id, comid);
+
+    rq.comid = cpu_to_be16(dev->base_com_id);
+
+    if ((err = trusted_command(dev, (uint8_t*)&rq, sizeof(rq), IF_SEND, TCG_PROTOCOL_ID_2, dev->base_com_id))) {
+        LOG(ERROR, "Failed to send stack reset.\n");
+        return err;
+    }
+
+    if ((err = trusted_command(dev, (uint8_t*)&resp, sizeof(resp), IF_RECV, TCG_PROTOCOL_ID_2, dev->base_com_id))) {
+        LOG(ERROR, "Failed to receive command: %i\n", err);
+        return err;
+    }
+
+    LOG(INFO, "ComID valid response: ComID 0x%04x, Code 0x%x, Length 0x%x, State 0x%x\n",
+        be16_to_cpu(resp.comid), be32_to_cpu(resp.request_code),
+        be16_to_cpu(resp.data_length), be32_to_cpu(resp.state));
+    LOG_HEX(&resp, 48);
+
+    return 0;
+}
+
+int stack_reset(struct disk_device *dev)
+{
+    int err = 0, i = 0;
+    struct stack_reset_request rq = {
+        .request_code = cpu_to_be32(TCG_REQUEST_CODE_STACK_RESET)
+    };
+    struct stack_reset_response resp = { 0 };
+
+    if ((err = do_level_0_discovery(dev))) {
+        LOG(ERROR, "Failed to get ComID from Discovery0.\n");
+        return err;
+    }
+
+    LOG(INFO, "Stack reset, Base ComID 0x%04x\n", dev->base_com_id);
+
+    rq.comid = cpu_to_be16(dev->base_com_id);
+
+    if ((err = trusted_command(dev, (uint8_t*)&rq, sizeof(rq), IF_SEND, TCG_PROTOCOL_ID_2, dev->base_com_id))) {
+        LOG(ERROR, "Failed to send stack reset.\n");
+        return err;
+    }
+
+    do {
+        if ((err = trusted_command(dev, (uint8_t*)&resp, sizeof(resp), IF_RECV, TCG_PROTOCOL_ID_2, dev->base_com_id))) {
+            LOG(ERROR, "Failed to receive command: %i\n", err);
+            return err;
+        }
+
+        LOG(INFO, "Stack reset #%i response: ComID 0x%04x, Code 0x%x, Length 0x%x, Response 0x%x\n", i,
+            be16_to_cpu(resp.comid), be32_to_cpu(resp.request_code),
+            be16_to_cpu(resp.data_length), be32_to_cpu(resp.response));
+
+        if (resp.data_length == 0)
+            sleep(1);
+
+    } while (resp.data_length == 0 && ++i < 3);
+
+    return 0;
 }
 
 int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid_pwd_len)

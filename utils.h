@@ -26,6 +26,10 @@ int setup_programmatic_reset(struct disk_device *dev, const unsigned char *pwd, 
                              char locking_range);
 
 int tper_reset(struct disk_device *dev);
+int stack_reset(struct disk_device *dev);
+
+int get_comid(struct disk_device *dev, int *comid);
+int comid_valid(struct disk_device *dev, int comid);
 
 int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid_pwd_len);
 

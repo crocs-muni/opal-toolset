@@ -163,6 +163,7 @@ enum TrustedCommandDirection {
 #define TCG_PROTOCOL_ID_1 0x01
 #define TCG_PROTOCOL_ID_2 0x02
 
+#define TCG_GET_COMID 0x0000
 #define TCG_LEVEL_0_DISCOVERY_COMID 0x0001
 
 #define METHOD_PROPERTIES_UID UCHR("\x00\x00\x00\x00\x00\x00\xff\x01")
@@ -455,6 +456,65 @@ struct disk_device {
         size_t unknown_len;
     } features;
 };
+
+#define TCG_REQUEST_CODE_NO_RESPONSE 0x00
+#define TCG_REQUEST_CODE_COMID_VALID 0x01
+#define TCG_REQUEST_CODE_STACK_RESET 0x02
+
+struct get_comid_response {
+    uint16_t comid;
+    uint16_t ext_comid;
+    uint8_t _padding[508];
+} __attribute__ ((packed));
+
+struct comid_valid_request {
+    uint16_t comid;
+    uint16_t ext_comid;
+    uint32_t request_code;
+    uint8_t _padding[504];
+} __attribute__ ((packed));
+
+struct comid_time {
+    uint8_t  year[2];
+    uint8_t  month;
+    uint8_t  day;
+    uint8_t  hour;
+    uint8_t  minute;
+    uint8_t  second;
+    uint8_t  fraction[2];
+    uint8_t  _reserved;
+} __attribute__ ((packed));
+
+struct comid_valid_response {
+    uint16_t comid;
+    uint16_t ext_comid;
+    uint32_t request_code;
+    uint8_t _reserved[2];
+    uint16_t data_length; /* 0 => pending, 0x22 => see response */
+    uint32_t state; /* 0 => invalid, 1 => inactive, 2 => issued, 3 => associated */
+    struct comid_time time_allocation;
+    struct comid_time time_expiry;
+    struct comid_time time_reset;
+    uint8_t _padding[466];
+} __attribute__ ((packed));
+
+struct stack_reset_request {
+    uint16_t comid;
+    uint16_t ext_comid;
+    uint32_t request_code;
+    uint8_t _padding[504];
+} __attribute__ ((packed));
+
+struct stack_reset_response {
+    uint16_t comid;
+    uint16_t ext_comid;
+    uint32_t request_code;
+    uint8_t _reserved[2];
+    uint16_t data_length; /* 0 => pending, 4 => see response */
+    uint32_t response; /* 0 => success, 1 => failure */
+    uint8_t _padding[496];
+} __attribute__ ((packed));
+
 int disk_device_open(struct disk_device *dev, const char *file, bool use_scsi_sec);
 void disk_device_close(struct disk_device *dev);
 
