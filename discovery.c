@@ -50,6 +50,8 @@ static void print_level_0_discovery(struct disk_device *dev)
 {
     int first = 0;
 
+    printf("  \"Revision\": %i,\n", dev->features.discovery0_revision);
+
     if (dev->features.tper.shared.feature_code) {
         struct level_0_discovery_tper_feature *body = &dev->features.tper;
 
@@ -86,7 +88,7 @@ static void print_level_0_discovery(struct disk_device *dev)
                "  }",
                body->shared.descriptor_version,
                body->MBR_done, body->MBR_enabled, body->media_encryption, body->locked, body->locking_enabled,
-               body->locking_supported);    
+               body->locking_supported);
             break;
 
         case 0x2:

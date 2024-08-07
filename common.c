@@ -109,6 +109,7 @@ static int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, 
     // } else if (feature_code == 0x0100) { /* Enterprise SSC */
     } else if (feature_code == 0x0200) {
         struct level_0_discovery_opal_1_feature *body = data;
+        //dev->base_com_id = be16_to_cpu(body->base_comID);
         dev->features.opal1 = *body;
     } else if (feature_code == 0x0201) {
         struct level_0_discovery_single_user_mode_feature *body = data;
@@ -166,17 +167,16 @@ static int tcg_discovery_0_process_feature(struct disk_device *dev, void *data, 
 static int tcg_discovery_0_process_response(struct disk_device *dev, void *data)
 {
     int err = 0;
-
     struct level_0_discovery_header *header = data;
     uint32_t offset = sizeof(struct level_0_discovery_header);
-    uint32_t total_length = be32_to_cpu(header->length);
 
-    while (offset < total_length) {
+    dev->features.discovery0_revision = be32_to_cpu(header->revision);
+
+    while (offset < be32_to_cpu(header->length)) {
         struct level_0_discovery_feature_shared *body =
                 (struct level_0_discovery_feature_shared *)((unsigned char *)data + offset);
-        uint16_t feature_code = be16_to_cpu(body->feature_code);
 
-        if ((err = tcg_discovery_0_process_feature(dev, body, feature_code))) {
+        if ((err = tcg_discovery_0_process_feature(dev, body, be16_to_cpu(body->feature_code)))) {
             return err;
         }
 

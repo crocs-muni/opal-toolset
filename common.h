@@ -438,6 +438,7 @@ struct disk_device {
     uint32_t sp_session_id;
 
     struct {
+        uint32_t discovery0_revision;
         struct level_0_discovery_tper_feature tper;
         struct level_0_discovery_lockin_feature locking;
         struct level_0_discovery_geometry_feature geometry;
