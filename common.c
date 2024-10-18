@@ -257,13 +257,14 @@ static int nvme_security_command(int fd, uint8_t *buffer, size_t buffer_len,
                                  int protocol, int comID)
 {
     int err = 0;
+    uintptr_t buffer_ptr = (uintptr_t)buffer;
 
     struct nvme_admin_cmd cmd = { 0 };
     // The structure of IF-RECV (IF-SEND) is described in 5.25 (5.26) of NVMe Base Specification.
     // The values for SP Specific are found in TCG SIIS.
     cmd.opcode = direction == IF_RECV ? NVME_SECURITY_RECEIVE : NVME_SECURITY_SEND;
 
-    cmd.addr = (unsigned long long)buffer;
+    cmd.addr = (uint64_t)buffer_ptr;
     cmd.data_len = buffer_len;
     // Security Protocol (SECP) | SP Specific | reserved
     cmd.cdw10 = (protocol << 24) | (comID << 8);
@@ -641,8 +642,6 @@ void finish_method(unsigned char *buffer, size_t *i)
     finish_headers(buffer, i);
 }
 
-
-
 int do_level_0_discovery(struct disk_device *dev)
 {
     int err = 0;
@@ -724,7 +723,7 @@ int start_session(struct disk_device *dev, const unsigned char *SPID, size_t use
     size_t i = 0;
 
     do_level_0_discovery(dev);
-    LOG(INFO, "base_com_id=%x user_id=%lu\n", dev->base_com_id, user_id);
+    LOG(INFO, "base_com_id=%x user_id=%zu\n", dev->base_com_id, user_id);
 
 
     if (user_id < SPECIAL_BASE_ID) {

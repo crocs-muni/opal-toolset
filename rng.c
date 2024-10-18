@@ -140,8 +140,8 @@ static size_t write_buffer(int fd, const void *buf, size_t length)
 
 static long timespec_ms(struct timespec *start, struct timespec *end)
 {
-	return (end->tv_sec - start->tv_sec) * 1000 +
-	        (end->tv_nsec - start->tv_nsec) / (1000 * 1000);
+    return (end->tv_sec - start->tv_sec) * 1000 +
+           (end->tv_nsec - start->tv_nsec) / (1000 * 1000);
 }
 
 static double timespec_sec(struct timespec *start, struct timespec *end)

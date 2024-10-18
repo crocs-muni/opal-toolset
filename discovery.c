@@ -125,7 +125,7 @@ static void print_level_0_discovery(struct disk_device *dev)
                body->locking_supported);
             break;
         }
-        
+
     }
 
     if (dev->features.geometry.shared.feature_code) {
@@ -136,8 +136,8 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"Version\": %i,\n"
                "    \"ALIGN\": %i,\n"
                "    \"LogicalBlockSize\": %i,\n"
-               "    \"AlignmentGranularity\": %li,\n"
-               "    \"LowestAlignedLBA\": %li\n"
+               "    \"AlignmentGranularity\": %" PRIu64 ",\n"
+               "    \"LowestAlignedLBA\": %" PRIu64 "\n"
                "  }",
                body->shared.descriptor_version, body->align, be32_to_cpu(body->logical_block_size),
                be64_to_cpu(body->alignment_granularity), be64_to_cpu(body->lowest_alignment_LBA));
@@ -151,8 +151,8 @@ static void print_level_0_discovery(struct disk_device *dev)
                "    \"Version\": %i,\n"
                "    \"ALIGN\": %i,\n"
                "    \"LogicalBlockSize\": %i,\n"
-               "    \"AlignmentGranularity\": %li,\n"
-               "    \"LowestAlignedLBA\": %li\n"
+               "    \"AlignmentGranularity\": %" PRIu64 ",\n"
+               "    \"LowestAlignedLBA\": %" PRIu64 "\n"
                "  }",
                body->shared.descriptor_version, body->align, be32_to_cpu(body->logical_block_size),
                be64_to_cpu(body->alignment_granularity), be64_to_cpu(body->lowest_alignment_LBA));
