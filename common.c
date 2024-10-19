@@ -1093,23 +1093,29 @@ int get_row_int(struct disk_device *dev, const unsigned char *object_uid, unsign
     size_t pos = sizeof(struct packet_headers);
     LOG(EVERYTHING, "Packet headers size: %zu.\n", pos);
 
+    if (buffer[pos + 0] == START_LIST_TOKEN && buffer[pos + 1] == END_LIST_TOKEN) {
+        LOG(EVERYTHING, "Empty list.\n");
+        return 2;
+    }
+
     if (buffer[pos + 0] != START_LIST_TOKEN || buffer[pos + 1] != START_LIST_TOKEN) {
         LOG(ERROR, "Unexpected tokens received: %02x %02x\n", buffer[pos], buffer[pos + 1]);
-        goto cleanup;
+        return 1;
     }
 
     if (buffer[pos + 2] == END_LIST_TOKEN && buffer[pos + 3] == END_LIST_TOKEN) {
-        return 1;
+        LOG(EVERYTHING, "Empty list.\n");
+        return 2;
     }
 
     if (buffer[pos + 2] != START_NAME_TOKEN) {
         LOG(ERROR, "Unexpected tokens received: %02x\n", buffer[pos + 2]);
-        goto cleanup;
+        return 1;
     }
     pos += 3;
     if (parse_int(buffer, &pos) != column) {
         LOG(ERROR, "Unexpected column received.\n");
-        return err;
+        return 1;
     }
 
     tmp = parse_int(buffer, &pos);
@@ -1119,9 +1125,7 @@ int get_row_int(struct disk_device *dev, const unsigned char *object_uid, unsign
     }
 
     *output = tmp;
-
-cleanup:
-    return err;
+    return 0;
 }
 
 int disk_device_open(struct disk_device *dev, const char *file, bool use_scsi_sec)

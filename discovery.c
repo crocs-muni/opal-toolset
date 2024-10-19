@@ -946,6 +946,100 @@ static int crawl_tper(struct disk_device *dev)
     return err;
 }
 
+static int crawl_adminsp(struct disk_device *dev)
+{
+    unsigned char msid[2048] = { 0 };
+    size_t msid_len = 0;
+    uint64_t progreset, removalmech;
+    int err = 0;
+
+    if ((err = start_session(dev, ADMIN_SP_UID, ANYBODY_USER_ID, NULL, 0))) {
+        LOG(ERROR, "Failed to initialise session with Admin SP as Anybody.\n");
+        return err;
+    }
+    if ((err = get_row_bytes(dev, TABLE_C_PIN_ROW_MSID_UID, TABLE_C_PIN_COLUMN_PIN, msid, sizeof(msid), &msid_len))) {
+        LOG(ERROR, "Failed to read MSID.\n");
+        close_session(dev);
+        return err;
+    }
+    if (msid_len >= sizeof(msid)) {
+        LOG(ERROR, "MSID overflow.\n");
+        return -1;
+    }
+    printf("  \"MSID\": \"%s\"", msid);
+
+    if ((err = get_row_int(dev, TABLE_TPER_INFO_OBJ_UID, TABLE_TPER_INFO_COLUMN_PROGRAMMATIC_RESET_ENABLE, &progreset))) {
+        if (err != 2)
+            LOG(ERROR, "Failed to read Programmatic Reset.\n");
+        printf("\n");
+        close_session(dev);
+        return err;
+    }
+    printf(",\n  \"ProgrammaticResetEnable\": %" PRIu64 "", progreset);
+
+    if ((err = get_row_int(dev, DATA_REMOVAL_MECHANISM_OBJ_UID, DATA_REMOVAL_COLUMN_ACTIVE_MECHANISM, &removalmech))) {
+        if (err != 2)
+            LOG(ERROR, "Failed to read Data Removal Mechanism.\n");
+        printf("\n");
+        close_session(dev);
+        return err;
+    }
+    printf(",\n  \"ActiveDataRemovalMechanism\": %" PRIu64 "\n", removalmech);
+
+    if ((err = close_session(dev))) {
+        LOG(ERROR, "Failed to close session.\n");
+        return err;
+    }
+
+    return 0;
+}
+
+static int crawl_lockingsp(struct disk_device *dev)
+{
+    uint64_t alignreq, blocksize, granularity, lowestlba;
+    int err = 0;
+
+    /*
+     * Both Opal and Pyrite says these values MAY be retrieved by Anybody.
+     *
+     */
+    if ((err = start_session(dev, LOCKING_SP_UID, ANYBODY_USER_ID, NULL, 0))) {
+        LOG(EVERYTHING, "Failed to initialise session with Locking SP as Anybody.\n");
+        return err;
+    }
+    if ((err = get_row_int(dev, LOCKING_INFO_UID, LOCKING_INFO_COLUMN_ALIGNMENT_REQUIRED, &alignreq))) {
+        LOG(ERROR, "Failed to read Required Alignment.\n");
+        close_session(dev);
+        return err;
+    }
+    if ((err = get_row_int(dev, LOCKING_INFO_UID, LOCKING_INFO_COLUMN_LOGICAL_BLOCK_SIZE, &blocksize))) {
+        LOG(ERROR, "Failed to read Logical Block Size.\n");
+        close_session(dev);
+        return err;
+    }
+    if ((err = get_row_int(dev, LOCKING_INFO_UID, LOCKING_INFO_COLUMN_ALIGNMENT_GRANULARITY, &granularity))) {
+        LOG(ERROR, "Failed to read Alignment Granularity.\n");
+        close_session(dev);
+        return err;
+    }
+    if ((err = get_row_int(dev, LOCKING_INFO_UID, LOCKING_INFO_COLUMN_LOWEST_ALIGNED_LBA, &lowestlba))) {
+        LOG(ERROR, "Failed to read Lowest Aligned LBA.\n");
+        close_session(dev);
+        return err;
+    }
+    if ((err = close_session(dev))) {
+        LOG(ERROR, "Failed to close session with Admin SP.\n");
+        return err;
+    }
+
+    printf("  \"ALIGN\": %" PRIu64 ",\n", alignreq); /* Use the same name as in Geometry */
+    printf("  \"LogicalBlockSize\": %" PRIu64 ",\n", blocksize);
+    printf("  \"AlignmentGranularity\": %" PRIu64 ",\n", granularity);
+    printf("  \"LowestAlignedLBA\": %" PRIu64 "\n", lowestlba);
+
+    return 0;
+}
+
 static int print_single_row(struct disk_device *dev, const unsigned char *table_uid, const unsigned char *sp_uid)
 {
     int err = 0;
@@ -1010,6 +1104,23 @@ static int print_discovery(struct disk_device *dev, int selection)
             print_level_0_discovery(dev);
         }
         printf("}");
+
+        /* Always add Admin SP info */
+        print_comma_start(&first);
+        printf("\"Admin SP\": {\n");
+        err = crawl_adminsp(dev);
+        printf("}");
+
+        /*
+         * Do not print Locking SP if we have geometry section already.
+         * This fails on Opal anyway as the Locking SP cannot be accessed by Anybody.
+         */
+        if (!dev->features.geometry.shared.feature_code) {
+            print_comma_start(&first);
+            printf("\"Locking SP\": {\n");
+            err = crawl_lockingsp(dev);
+            printf("}");
+        }
     }
 
     if ((selection == SELECT_EVERYTHING) || (selection == SELECT_DISCOVERY_1)) {
@@ -1084,7 +1195,7 @@ static void print_usage(char *prog_name)
             "selection: 0=everything,\n"
             "           1=metainformation,\n"
             "           2=identify,\n"
-            "           3=level 0 discovery,\n"
+            "           3=level 0 discovery and SP info,\n"
             "           4=level 1 discovery,\n"
             "           5=level 2 discovery,\n"
             "           6=level 2 discovery - extra,\n"
