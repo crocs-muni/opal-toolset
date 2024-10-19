@@ -1009,8 +1009,9 @@ static int crawl_lockingsp(struct disk_device *dev)
      * Both Opal and Pyrite says these values MAY be retrieved by Anybody.
      *
      */
+//    if ((err = start_session(dev, LOCKING_SP_UID, ADMIN_BASE_ID + 1, pwd, pwd_len))) {
     if ((err = start_session(dev, LOCKING_SP_UID, ANYBODY_USER_ID, NULL, 0))) {
-        LOG(EVERYTHING, "Failed to initialise session with Locking SP as Anybody.\n");
+        LOG(ERROR, "Failed to initialise session with Locking SP as Anybody.\n");
         return err;
     }
     if ((err = get_row_int(dev, LOCKING_INFO_UID, LOCKING_INFO_COLUMN_ALIGNMENT_REQUIRED, &alignreq))) {
@@ -1119,9 +1120,10 @@ static int print_discovery(struct disk_device *dev, int selection)
 
         /*
          * Do not print Locking SP if we have geometry section already.
-         * This fails on Opal anyway as the Locking SP cannot be accessed by Anybody.
+         * TODO: Many drives fails as the Locking SP cannot be accessed by Anybody.
+         *       add admin password option
          */
-        if (!dev->features.geometry.shared.feature_code) {
+        if (selection == SELECT_EVERYTHING && !dev->features.geometry.shared.feature_code) {
             print_comma_start(&first);
             printf("\"Locking SP\": {\n");
             err = crawl_lockingsp(dev);
