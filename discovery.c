@@ -950,7 +950,7 @@ static int crawl_adminsp(struct disk_device *dev)
 {
     unsigned char msid[2048] = { 0 };
     size_t msid_len = 0;
-    uint64_t progreset, removalmech;
+    uint64_t progreset;
     int err = 0;
 
     if ((err = start_session(dev, ADMIN_SP_UID, ANYBODY_USER_ID, NULL, 0))) {
@@ -977,6 +977,10 @@ static int crawl_adminsp(struct disk_device *dev)
     }
     printf(",\n  \"ProgrammaticResetEnable\": %" PRIu64 "", progreset);
 
+/*
+ * This is for some reason often not accessible by Anybody user, ignore it for now.
+
+    uint64_t removalmech;
     if ((err = get_row_int(dev, DATA_REMOVAL_MECHANISM_OBJ_UID, DATA_REMOVAL_COLUMN_ACTIVE_MECHANISM, &removalmech))) {
         if (err != 2)
             LOG(ERROR, "Failed to read Data Removal Mechanism.\n");
@@ -985,8 +989,10 @@ static int crawl_adminsp(struct disk_device *dev)
         return err;
     }
     printf(",\n  \"ActiveDataRemovalMechanism\": %" PRIu64 "\n", removalmech);
+*/
+    printf("\n");
 
-    if ((err = close_session(dev))) {
+if ((err = close_session(dev))) {
         LOG(ERROR, "Failed to close session.\n");
         return err;
     }
