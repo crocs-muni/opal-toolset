@@ -121,6 +121,10 @@ int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned c
     size_t buffer_len = 0;
     unsigned char response[512] = { 0 };
 
+    if (challenge_len == 0 || !challenge || !*challenge) {
+        LOG(ERROR, "PIN not specified.\n");
+        return -1;
+    }
 
     if ((err = start_session(dev, LOCKING_SP_UID, ADMIN_BASE_ID + 1, challenge, challenge_len))) {
         return err;
@@ -278,6 +282,16 @@ int setup_user(struct disk_device *dev, size_t user_uid, unsigned char *admin_pi
 {
     int err = 0;
 
+    if (admin_pin_len == 0 || !admin_pin || !*admin_pin) {
+        LOG(ERROR, "Admin PIN not specified.\n");
+        return -1;
+    }
+
+    if (user_pin_len == 0 || !user_pin || !*user_pin) {
+        LOG(ERROR, "User PIN not specified.\n");
+        return -1;
+    }
+
     if ((err = start_session(dev, LOCKING_SP_UID, ADMIN_BASE_ID + 1, admin_pin, admin_pin_len))) {
         LOG(ERROR, "Failed to start session with Locking SP.\n");
         return err;
@@ -322,6 +336,11 @@ int setup_programmatic_reset(struct disk_device *dev, const unsigned char *pwd, 
                              char locking_range)
 {
     int err = 0;
+
+    if (pwd_len == 0 || !pwd || !*pwd) {
+        LOG(ERROR, "PIN not specified.\n");
+        return -1;
+    }
 
     // Enable TPER_RESET command.
     if ((err = start_session(dev, ADMIN_SP_UID, SID_USER_ID, pwd, pwd_len))) {
@@ -487,6 +506,11 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
     unsigned char msid[2048] = { 0 };
     size_t msid_len = 0;
 
+    if (sid_pwd_len == 0 || !sid_pwd || !*sid_pwd) {
+        LOG(ERROR, "PIN not specified.\n");
+        return -1;
+    }
+
     // Get MSID.
     if ((err = start_session(dev, ADMIN_SP_UID, ANYBODY_USER_ID, NULL, 0))) {
         LOG(ERROR, "Failed to start Admin SP session as Anybody.\n");
@@ -557,6 +581,11 @@ int psid_revert(struct disk_device *dev, const unsigned char *psid, size_t psid_
     unsigned char response[1024] = { 0 };
 
     LOG(INFO, "PSID revert\n");
+
+    if (psid_len == 0 || !psid || !*psid) {
+        LOG(ERROR, "PSID not specified.\n");
+        return -1;
+    }
 
     if ((err = start_session(dev, ADMIN_SP_UID, PSID_USER_ID, psid, psid_len))) {
         LOG(ERROR, "Cannot initialise session.\n");
