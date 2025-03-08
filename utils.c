@@ -93,6 +93,11 @@ int unlock_range(struct disk_device *dev, unsigned char locking_range, size_t us
     size_t i = 0;
     unsigned char response[2048] = { 0 };
 
+    if (locking_range == ALL_LOCKING_RANGES) {
+        LOG(ERROR, "LR must be specified.\n");
+        return -1;
+    }
+
     if ((err = start_session(dev, LOCKING_SP_UID, user_uid, challenge, challenge_len))) {
         LOG(ERROR, "Failed when setting starting session for setting locking range parameters.\n");
         return err;
@@ -215,6 +220,11 @@ int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *c
     int err = 0;
     unsigned char locking_range_uid_str[9] = { 0 };
     uint64_t start, length, rlocked, wlocked, rlck_enabled, wlck_enabled;
+
+    if (locking_range == ALL_LOCKING_RANGES) {
+        LOG(ERROR, "LR must be specified.\n");
+        return -1;
+    }
 
     if (locking_range == 0) {
         memcpy(locking_range_uid_str, LOCKING_RANGE_GLOBAL_UID, 8);
@@ -498,12 +508,11 @@ int stack_reset(struct disk_device *dev)
 
     return 0;
 }
-
-int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid_pwd_len)
+int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid_pwd_len,
+               bool sum, unsigned char sum_locking_range, bool sum_policy)
 {
-    int err = 0;
-
-    unsigned char msid[2048] = { 0 };
+    int err = 0, max_lr = 0;
+    unsigned char msid[2048] = { 0 }, uid[9] = { 0 }, param[3];
     size_t msid_len = 0;
 
     if (sid_pwd_len == 0 || !sid_pwd || !*sid_pwd) {
@@ -524,6 +533,12 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
     if ((err = close_session(dev))) {
         LOG(ERROR, "Failed to close session.\n");
         return err;
+    }
+
+    // We have Discovery0 features now
+    if (sum && !dev->features.single_user_mode.shared.feature_code) {
+        LOG(ERROR, "SUM not supported.\n");
+        return -1;
     }
 
     // Update SID password.
@@ -555,11 +570,62 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
     [ ]
     */
     unsigned char buffer[512] = { 0 };
-    size_t buffer_used = 0;
+    size_t i = 0;
     unsigned char response[512] = { 0 };
-    prepare_method(buffer, &buffer_used, dev, LOCKING_SP_UID, METHOD_ACTIVATE_UID);
-    finish_method(buffer, &buffer_used);
-    if ((err = invoke_method(dev, buffer, buffer_used, response, sizeof(response)))) {
+    prepare_method(buffer, &i, dev, LOCKING_SP_UID, METHOD_ACTIVATE_UID);
+
+    if (sum) {
+        max_lr = be32_to_cpu(dev->features.single_user_mode.number_of_locking_objects_supported);
+
+        start_name(buffer, &i);
+
+        memset(param, 0, sizeof(param));
+        hex_add(param, 3, METHOD_ACTIVATE_SUM_LIST_PARAM);
+        short_atom(buffer, &i, 0, 0, param, 3);
+
+        if (sum_locking_range == ALL_LOCKING_RANGES) {
+            /* Whole table */
+            memcpy(uid, LOCKING_TABLE_UID, 8);
+            short_atom(buffer, &i, 1, 0, uid, 8);
+        } else if (sum_locking_range >= max_lr) {
+            /* List of all supported LRs */
+            start_list(buffer, &i);
+            //memcpy(uid, LOCKING_RANGE_GLOBAL_UID, 8);
+            //short_atom(buffer, &i, 1, 0, uid, 8);
+            for (int j = 1; j < max_lr; j++) {
+                memcpy(uid, LOCKING_RANGE_NNNN_UID, 8);
+                hex_add(uid, 8, j);
+                short_atom(buffer, &i, 1, 0, uid, 8);
+            }
+            end_list(buffer, &i);
+        } else {
+            /* One specified LR */
+            start_list(buffer, &i);
+            if (sum_locking_range == 0)
+                memcpy(uid, LOCKING_RANGE_GLOBAL_UID, 8);
+            else {
+                memcpy(uid, LOCKING_RANGE_NNNN_UID, 8);
+                hex_add(uid, 8, sum_locking_range);
+            }
+            short_atom(buffer, &i, 1, 0, uid, 8);
+            end_list(buffer, &i);
+        }
+
+        end_name(buffer, &i);
+
+        /* RangeStartRangeLengthPolicy */
+        start_name(buffer, &i);
+        memset(param, 0, sizeof(param));
+        hex_add(param, 3, METHOD_ACTIVATE_SUM_POLICY_PARAM);
+        short_atom(buffer, &i, 0, 0, param, 3);
+
+        tiny_atom(buffer, &i, 0, sum_policy ? 1 : 0);
+
+        end_name(buffer, &i);
+    }
+
+    finish_method(buffer, &i);
+    if ((err = invoke_method(dev, buffer, i, response, sizeof(response)))) {
         LOG(ERROR, "Failed to activate Locking SP.\n");
         close_session(dev);
         return err;
@@ -724,8 +790,13 @@ int regenerate_key(struct disk_device *dev, unsigned char locking_range, unsigne
                    size_t admin_pin_len)
 {
     int err = 0;
-
     unsigned char locking_range_uid_str[8] = { 0 };
+
+    if (locking_range == ALL_LOCKING_RANGES) {
+        LOG(ERROR, "LR must be specified.\n");
+        return -1;
+    }
+
     if (locking_range == 0) {
         memcpy(locking_range_uid_str, LOCKING_RANGE_GLOBAL_UID, 8);
     } else {

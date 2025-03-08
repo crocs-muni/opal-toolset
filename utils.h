@@ -5,8 +5,11 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 struct disk_device;
+
+#define ALL_LOCKING_RANGES 0xff
 
 int unlock_range(struct disk_device *dev, unsigned char locking_range, size_t user_uid, 
                  char read_locked, char write_locked, 
@@ -31,7 +34,8 @@ int stack_reset(struct disk_device *dev);
 int get_comid(struct disk_device *dev, int *comid);
 int comid_valid(struct disk_device *dev, int comid);
 
-int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid_pwd_len);
+int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid_pwd_len,
+               bool sum, unsigned char sum_locking_range, bool sum_policy);
 
 int psid_revert(struct disk_device *dev, const unsigned char *psid, size_t psid_len);
 

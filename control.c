@@ -25,7 +25,9 @@ enum ArgKey {
     ARG_KEY_READ_LOCKED = 4,
     ARG_KEY_WRITE_LOCKED = 5,
     ARG_KEY_VERBOSE = 'V',
-    ARG_KEY_SCSI = 'S'
+    ARG_KEY_SCSI = 'S',
+    ARG_KEY_SUM = 10,
+    ARG_KEY_SUM_RANGE_ADMIN = 11,
 };
 
 static struct argp_option options_setup_range[] = {
@@ -58,6 +60,9 @@ static struct argp_option options_setup_user[] = {
 static struct argp_option options_setup_tper[] = { 
     { "assign-pin", ARG_KEY_ASSIGN_PIN, "pin", 0, "Password to assign to the owner authority", 0 },
     { "assign-pin-hex", ARG_KEY_ASSIGN_PIN_HEX, "hex_pin", 0, "Password to assign to the owner authority", 0 },
+    { "sum", ARG_KEY_SUM, NULL, 0, "Use Single User Mode (SUM)", 0 },
+    { "sum-policy", ARG_KEY_SUM_RANGE_ADMIN, NULL, 0, "Use SUM policy Admin only", 0 },
+    { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "SUM locking range (default is whole table)", 0 },
     { 0 }
 };
 
@@ -130,6 +135,8 @@ struct Arguments {
     int8_t write_lock_enabled;
     int8_t read_locked;
     int8_t write_locked;
+    bool sum;
+    bool sum_range_admin;
 
     size_t parsed;
 } args = {
@@ -139,6 +146,7 @@ struct Arguments {
     .write_locked = VAL_UNDEFINED,
     .locking_range_start = VAL_UNDEFINED,
     .locking_range_length = VAL_UNDEFINED,
+    .locking_range = ALL_LOCKING_RANGES,
 };
 
 static error_t parse_opt_pin(char *source, unsigned char *target, size_t *target_len)
@@ -284,6 +292,12 @@ static error_t parse_opt_child(int key, char *arg, struct argp_state *state)
         return parse_opt_bool(arg, &args->read_locked);
     case ARG_KEY_WRITE_LOCKED:
         return parse_opt_bool(arg, &args->write_locked);
+    case ARG_KEY_SUM:
+        args->sum = true;
+        break;
+    case ARG_KEY_SUM_RANGE_ADMIN:
+        args->sum_range_admin = true;
+        break;
     default:
         return ARGP_ERR_UNKNOWN;
     }
@@ -348,7 +362,8 @@ int main(int argc, char **argv)
                          args.verify_pin, args.verify_pin_len,
                          args.assign_pin, args.assign_pin_len);
     } else if (args.command == CMD_SETUP_TPER) {
-        err = setup_tper(&dev, args.assign_pin, args.assign_pin_len);
+        err = setup_tper(&dev, args.assign_pin, args.assign_pin_len,
+                         args.sum, args.locking_range, args.sum_range_admin);
         if (!err)
             err = setup_programmatic_reset(&dev, args.assign_pin, args.assign_pin_len, -1);
     } else if (args.command == CMD_PSID_REVERT) {
