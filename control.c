@@ -54,6 +54,8 @@ static struct argp_option options_setup_user[] = {
     { "assign-pin", ARG_KEY_ASSIGN_PIN, "pin", 0, "Password to assign to selected user authority", 0 },
     { "assign-pin-hex", ARG_KEY_ASSIGN_PIN_HEX, "hex_pin", 0, "Password to assign to selected user authority", 0 },
     { "user", ARG_KEY_USER, "id", 0, "ID of the user authority", 0 },
+    { "sum", ARG_KEY_SUM, NULL, 0, "Use Single User Mode (SUM)", 0 },
+    { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "SUM locking range", 0 },
     { 0 }
 };
 
@@ -360,7 +362,8 @@ int main(int argc, char **argv)
     } else if (args.command == CMD_SETUP_USER) {
         err = setup_user(&dev, args.user[0], 
                          args.verify_pin, args.verify_pin_len,
-                         args.assign_pin, args.assign_pin_len);
+                         args.assign_pin, args.assign_pin_len,
+                         args.sum, args.locking_range);
     } else if (args.command == CMD_SETUP_TPER) {
         err = setup_tper(&dev, args.assign_pin, args.assign_pin_len,
                          args.sum, args.locking_range, args.sum_range_admin);

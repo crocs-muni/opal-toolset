@@ -287,8 +287,10 @@ int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *c
     return 0;
 }
 
-int setup_user(struct disk_device *dev, size_t user_uid, unsigned char *admin_pin, size_t admin_pin_len,
-               unsigned char *user_pin, size_t user_pin_len)
+int setup_user(struct disk_device *dev, size_t user_uid,
+               unsigned char *admin_pin, size_t admin_pin_len,
+               unsigned char *user_pin, size_t user_pin_len,
+               bool sum, unsigned char sum_locking_range)
 {
     int err = 0;
 
@@ -302,14 +304,27 @@ int setup_user(struct disk_device *dev, size_t user_uid, unsigned char *admin_pi
         return -1;
     }
 
+    if (sum && sum_locking_range == ALL_LOCKING_RANGES) {
+        LOG(ERROR, "LR must be specified.\n");
+        return -1;
+    }
+
+    if (sum && user_uid != (sum_locking_range + USER_BASE_ID + 1)) {
+        LOG(ERROR, "In SUM mode, user ID must be equal to unlocked LR number + 1.\n");
+        return -1;
+    }
+
     if ((err = start_session(dev, LOCKING_SP_UID, ADMIN_BASE_ID + 1, admin_pin, admin_pin_len))) {
-        LOG(ERROR, "Failed to start session with Locking SP.\n");
+        LOG(ERROR, "Failed to start ADMIN session with Locking SP.\n");
         return err;
     }
 
     unsigned char user_uid_str[9] = { 0 };
     memcpy(user_uid_str, AUTHORITY_XXXX_UID, 8);
-    hex_add(user_uid_str, 8, user_uid);
+    if (sum)
+        hex_add(user_uid_str, 8, USER_BASE_ID + 1); /* Always USER1. Why? */
+    else
+        hex_add(user_uid_str, 8, user_uid);
 
     unsigned char atom_true[32] = { 0 };
     size_t atom_true_len = 0;
@@ -319,6 +334,25 @@ int setup_user(struct disk_device *dev, size_t user_uid, unsigned char *admin_pi
         LOG(ERROR, "Failed to enable User authority.\n");
         close_session(dev);
         return err;
+    }
+
+    /*
+     * For SUM we need user session now
+     * Note default confusing association (sec 4.4.1 in SUM SSC doc)
+     *   Global Locking Range (0) -> User1 (0x30001)
+     *   Locking Range 1 -> User2 (0x30002)
+     *    ...
+     */
+    if (sum) {
+        unsigned char empty_str = 0;
+
+        if ((err = close_session(dev)))
+            LOG(ERROR, "Failed to close a session.\n");
+
+        if ((err = start_session(dev, LOCKING_SP_UID, user_uid, &empty_str, 0))) {
+            LOG(ERROR, "Failed to start User session with Locking SP.\n");
+            return err;
+        }
     }
 
     unsigned char c_pin_str[9] = { 0 };

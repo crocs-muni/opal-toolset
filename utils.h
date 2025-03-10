@@ -23,7 +23,8 @@ int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *c
 
 int setup_user(struct disk_device *dev, size_t user_uid,
                unsigned char *admin_pin, size_t admin_pin_len,
-               unsigned char *user_pin, size_t user_pin_len);
+               unsigned char *user_pin, size_t user_pin_len,
+               bool sum, unsigned char sum_locking_range);
 
 int setup_programmatic_reset(struct disk_device *dev, const unsigned char *pwd, size_t pwd_len, 
                              char locking_range);
