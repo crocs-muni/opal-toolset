@@ -109,11 +109,7 @@ int unlock_range(struct disk_device *dev, unsigned char locking_range, size_t us
         return err;
     }
 
-    if ((err = close_session(dev))) {
-        LOG(ERROR, "Failed when closing locking session.\n");
-        return err;
-    }
-
+    err = close_session(dev);
     return err;
 }
 
@@ -224,10 +220,7 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
         }
     }
 
-    if ((err = close_session(dev))) {
-        return err;
-    }
-
+    err = close_session(dev);
     return err;
 }
 
@@ -286,10 +279,9 @@ int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *c
         return err;
     }
 
-    if ((err = close_session(dev))) {
-        LOG(ERROR, "Failed to close session.\n");
+    err = close_session(dev);
+    if (err)
         return err;
-    }
 
     fprintf(stdout,
             "Locking range %u: Start: %" PRIu64 ", length: %" PRIu64 ", R locked: %s, W locked: %s, R lock enabled: %s, W lock enabled: %s.\n",
@@ -362,8 +354,9 @@ int setup_user(struct disk_device *dev, size_t user_uid,
     if (sum) {
         unsigned char empty_str = 0;
 
-        if ((err = close_session(dev)))
-            LOG(ERROR, "Failed to close a session.\n");
+        err = close_session(dev);
+        if (err)
+            return err;
 
         if ((err = start_session(dev, LOCKING_SP_UID, user_uid, &empty_str, 0))) {
             LOG(ERROR, "Failed to start User session with Locking SP.\n");
@@ -385,10 +378,7 @@ int setup_user(struct disk_device *dev, size_t user_uid,
         return err;
     }
 
-    if ((err = close_session(dev))) {
-        LOG(ERROR, "Failed to close a session.\n");
-    }
-
+    err = close_session(dev);
     return err;
 }
 
@@ -418,10 +408,9 @@ int setup_programmatic_reset(struct disk_device *dev, const unsigned char *pwd, 
         return err;
     }
 
-    if ((err = close_session(dev))) {
-        LOG(ERROR, "Failed to finish session.\n");
+    err = close_session(dev);
+    if (err)
         return err;
-    }
 
     // Change LockOnReset for the locking range.
     if (locking_range >= 0) {
@@ -444,12 +433,11 @@ int setup_programmatic_reset(struct disk_device *dev, const unsigned char *pwd, 
         if ((err = set_row(dev, locking_range_uid, LOCKING_RANGE_COLUMN_LOCK_ON_RESET, 
                            atom_resets, atom_resets_len))) {
             LOG(ERROR, "Failed to set LockOnReset.\n");
-        }
-
-        if ((err = close_session(dev))) {
-            LOG(ERROR, "Failed to finish session.\n");
+            close_session(dev);
             return err;
         }
+
+        err = close_session(dev);
     }
 
     return err;
@@ -580,10 +568,10 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
         close_session(dev);
         return err;
     }
-    if ((err = close_session(dev))) {
-        LOG(ERROR, "Failed to close session.\n");
+
+    err = close_session(dev);
+    if (err)
         return err;
-    }
 
     // We have Discovery0 features now
     if (sum && !dev->features.single_user_mode.shared.feature_code) {
@@ -604,10 +592,9 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
         close_session(dev);
         return err;
     }
-    if ((err = close_session(dev))) {
-        LOG(ERROR, "Failed to close session.\n");
+    err = close_session(dev);
+    if (err)
         return err;
-    }
 
     // Activate locking SP.
     if ((err = start_session(dev, ADMIN_SP_UID, SID_USER_ID, sid_pwd, sid_pwd_len))) {
@@ -680,11 +667,8 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
         close_session(dev);
         return err;
     }
-    if ((err = close_session(dev))) {
-        LOG(ERROR, "Failed to close session.\n");
-        return err;
-    }
 
+    err = close_session(dev);
     return err;
 }
 
