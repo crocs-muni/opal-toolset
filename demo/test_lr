@@ -1,0 +1,43 @@
+#!/bin/bash
+
+if [ $(id -u) != 0 ] ; then
+  CONTROL="sudo ../control"
+else
+  CONTROL="../control"
+fi
+
+source config
+
+if ! test -e $DEV ; then
+  echo "Device not available ($DEV)."
+  exit 1
+fi
+
+echo "DEV: $DEV, LR SETUP: $START, $LENGTH"
+
+echo "PSID RESET"
+$CONTROL psid_revert $DEV --verify-pin=$DEV_PSID
+
+echo "ASSIGN ADMIN PIN"
+$CONTROL setup_tper $DEV --assign-pin $PIN_ADMIN
+
+echo "ASSIGN LR PIN"
+$CONTROL setup_user $DEV --user $USER --verify-pin $PIN_ADMIN --assign-pin $PIN_USER
+
+echo "LR SETUP: $START, $LENGTH"
+$CONTROL setup_range $DEV --locking-range $LR --locking-range-start $START --locking-range-length $LENGTH --verify-pin $PIN_ADMIN --user $USER
+
+echo "PRINT LR"
+$CONTROL list_range $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER
+
+echo "LOCK LR"
+$CONTROL unlock $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER --read-locked=1 --write-locked=1
+$CONTROL list_range $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER
+
+echo "UNLOCK LR"
+$CONTROL unlock $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER --read-locked=0 --write-locked=0
+$CONTROL list_range $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER
+
+echo "LOCK LR"
+$CONTROL unlock $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER --read-locked=1 --write-locked=1
+$CONTROL list_range $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER
