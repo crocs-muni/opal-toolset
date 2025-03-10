@@ -117,8 +117,10 @@ int unlock_range(struct disk_device *dev, unsigned char locking_range, size_t us
     return err;
 }
 
-int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned char *challenge,
-                size_t challenge_len, uint64_t start, uint64_t length, size_t users[], size_t users_len)
+int setup_range(struct disk_device *dev, unsigned char locking_range,
+                unsigned char *challenge, size_t challenge_len,
+                uint64_t start, uint64_t length,
+                size_t users[], size_t users_len, bool sum)
 {
     int err = 0;
 
@@ -131,7 +133,18 @@ int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned c
         return -1;
     }
 
-    if ((err = start_session(dev, LOCKING_SP_UID, ADMIN_BASE_ID + 1, challenge, challenge_len))) {
+    if (sum && users_len != 1) {
+        LOG(ERROR, "Wrong users count.\n");
+        return -1;
+    }
+
+    if (sum)
+        err = start_session(dev, LOCKING_SP_UID, users[0], challenge, challenge_len);
+    else
+        err = start_session(dev, LOCKING_SP_UID, ADMIN_BASE_ID + 1, challenge, challenge_len);
+
+    if (err) {
+        LOG(ERROR, "Failed starting session for setting range parameters.\n");
         return err;
     }
 
@@ -146,6 +159,9 @@ int setup_range(struct disk_device *dev, unsigned char locking_range, unsigned c
         close_session(dev);
         return err;
     }
+
+    if (sum)
+        return close_session(dev);
 
     // Create ACE with all the users.
     if (users_len == 0) {

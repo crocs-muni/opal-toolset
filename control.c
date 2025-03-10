@@ -358,7 +358,7 @@ int main(int argc, char **argv)
         err = setup_range(&dev, args.locking_range, 
                           args.verify_pin, args.verify_pin_len, 
                           args.locking_range_start, args.locking_range_length, 
-                          args.user, args.user_count);
+                          args.user, args.user_count, args.sum);
     } else if (args.command == CMD_SETUP_USER) {
         err = setup_user(&dev, args.user[0], 
                          args.verify_pin, args.verify_pin_len,
