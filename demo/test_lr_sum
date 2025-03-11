@@ -15,7 +15,7 @@ fi
 
 echo "DEV: $DEV, LR SETUP: $START, $LENGTH"
 
-echo "PSID RESET"
+echo "PSID REVERT"
 $CONTROL psid_revert $DEV --verify-pin=$DEV_PSID
 
 echo "ASSIGN ADMIN PIN"
@@ -41,3 +41,6 @@ $CONTROL list_range $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER
 echo "LOCK LR"
 $CONTROL unlock $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER --read-locked=1 --write-locked=1
 $CONTROL list_range $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER
+
+echo "PSID REVERT"
+$CONTROL psid_revert $DEV --verify-pin=$DEV_PSID
