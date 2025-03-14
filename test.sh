@@ -2,9 +2,10 @@ set -e
 
 failed=0
 
+# NOTE: avoiding reading the first block as USB connected drives have some issue here
 function unreadable() {
   sleep 0.15
-  if dd if="${DEV}" of=/dev/null bs=4096 count=1 skip=0 iflag=direct &>>"${LOG_FILE}"; then
+  if dd if="${DEV}" of=/dev/null bs=4096 count=1 skip=1 iflag=direct &>>"${LOG_FILE}"; then
     echo " bad" | tee -a "${LOG_FILE}"
     failed="$((failed + 1))"
   else
@@ -14,7 +15,7 @@ function unreadable() {
 
 function readable() {
   sleep 0.15
-  if dd if="${DEV}" of=/dev/null bs=4096 count=1 skip=0 iflag=direct &>>"${LOG_FILE}"; then
+  if dd if="${DEV}" of=/dev/null bs=4096 count=1 skip=1 iflag=direct &>>"${LOG_FILE}"; then
     echo " good" | tee -a "${LOG_FILE}"
   else
     echo " bad" | tee -a "${LOG_FILE}"
