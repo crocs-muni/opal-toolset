@@ -4,7 +4,7 @@ failed=0
 
 function unreadable() {
   sleep 0.15
-  if dd if="${DEV}" bs=1 count=1 skip=0 &>>"${LOG_FILE}"; then
+  if dd if="${DEV}" of=/dev/null bs=4096 count=1 skip=0 iflag=direct &>>"${LOG_FILE}"; then
     echo " bad" | tee -a "${LOG_FILE}"
     failed="$((failed + 1))"
   else
@@ -14,16 +14,12 @@ function unreadable() {
 
 function readable() {
   sleep 0.15
-  if dd if="${DEV}" bs=1 count=1 skip=0 &>>"${LOG_FILE}"; then
+  if dd if="${DEV}" of=/dev/null bs=4096 count=1 skip=0 iflag=direct &>>"${LOG_FILE}"; then
     echo " good" | tee -a "${LOG_FILE}"
   else
     echo " bad" | tee -a "${LOG_FILE}"
     failed="$((failed + 1))"
   fi
-}
-
-function hexify() {
-  python3 -c "print(\"\".join([hex(ord(i))[2:] for i in \"${PSID}\"]))"
 }
 
 OPAL_UTIL="./control"
@@ -42,7 +38,6 @@ USER_1_PIN="1111"
 USER_2_PIN="2222"
 USER_3_PIN="3333"
 USER_4_PIN="4444"
-PSID_HEX="$(hexify "${PSID}")"
 LOG_FILE="./test_log"
 
 
@@ -54,12 +49,13 @@ echo "USER_1_PIN: ${USER_1_PIN}" | tee -a "${LOG_FILE}"
 echo "USER_2_PIN: ${USER_2_PIN}" | tee -a "${LOG_FILE}"
 echo "USER_3_PIN: ${USER_3_PIN}" | tee -a "${LOG_FILE}"
 echo "USER_4_PIN: ${USER_4_PIN}" | tee -a "${LOG_FILE}"
-echo "PSID:       ${PSID} -> ${PSID_HEX}" | tee -a "${LOG_FILE}"
+echo "PSID:       ${PSID}" | tee -a "${LOG_FILE}"
 echo "" | tee -a "${LOG_FILE}"
 
-"${OPAL_UTIL}" psid_revert "${DEV}" --verify-pin "${PSID_HEX}" &>>"${LOG_FILE}"
+"${OPAL_UTIL}" psid_revert "${DEV}" --verify-pin "${PSID}" &>>"${LOG_FILE}"
 
 "${OPAL_UTIL}" setup_tper "${DEV}" --assign-pin "${ADMIN_PIN}" &>>"${LOG_FILE}"
+"${OPAL_UTIL}" setup_reset "${DEV}" --locking-range 1 --verify-pin "${ADMIN_PIN}" &>>"${LOG_FILE}"
 
 "${OPAL_UTIL}" setup_user "${DEV}" --user 1 --verify-pin "${ADMIN_PIN}" --assign-pin "${USER_1_PIN}" &>>"${LOG_FILE}"
 "${OPAL_UTIL}" setup_user "${DEV}" --user 2 --verify-pin "${ADMIN_PIN}" --assign-pin "${USER_2_PIN}" &>>"${LOG_FILE}"
@@ -69,15 +65,20 @@ echo "" | tee -a "${LOG_FILE}"
 readable "${DEV}"
 
 echo "locking range does not affect data outside of the range" | tee -a "${LOG_FILE}"
-"${OPAL_UTIL}" -VV setup_range "${DEV}" --locking-range 1 --locking-range-start 512 --locking-range-length 512 --user 1 --user 2 --user 4 --verify-pin "${ADMIN_PIN}" &>>"${LOG_FILE}"
-"${OPAL_UTIL}" -VV unlock "${DEV}" --user 1 --verify-pin "${USER_1_PIN}" --locking-range 1 --read-locked 1 &>>"${LOG_FILE}"
+"${OPAL_UTIL}" -V setup_range "${DEV}" --locking-range 1 --locking-range-start 512 --locking-range-length 512 --user 1 --user 2 --user 4 --verify-pin "${ADMIN_PIN}" &>>"${LOG_FILE}"
+"${OPAL_UTIL}" -V unlock "${DEV}" --user 1 --verify-pin "${USER_1_PIN}" --locking-range 1 --read-locked 1 &>>"${LOG_FILE}"
+"${OPAL_UTIL}" list_range $DEV --locking-range 1 --user 1 --verify-pin "${USER_1_PIN}" &>>"${LOG_FILE}"
 readable "${DEV}"
-"${OPAL_UTIL}" -VV unlock "${DEV}" --user 2 --verify-pin "${USER_2_PIN}" --locking-range 1 --read-locked 0 &>>"${LOG_FILE}"
+
+"${OPAL_UTIL}" -V unlock "${DEV}" --user 2 --verify-pin "${USER_2_PIN}" --locking-range 1 --read-locked 0 &>>"${LOG_FILE}"
+"${OPAL_UTIL}" list_range $DEV --locking-range 1 --user 2 --verify-pin "${USER_2_PIN}" &>>"${LOG_FILE}"
 readable "${DEV}"
 
 echo "locking range does affect data inside the range" | tee -a "${LOG_FILE}"
-"${OPAL_UTIL}" -VV setup_range "${DEV}" --locking-range 1 --locking-range-start 0 --locking-range-length 512 --user 1 --user 2 --user 4 --verify-pin "${ADMIN_PIN}" &>>"${LOG_FILE}"
-"${OPAL_UTIL}" -VV unlock "${DEV}" --user 1 --verify-pin "${USER_1_PIN}" --locking-range 1 --read-locked 1 &>>"${LOG_FILE}"
+"${OPAL_UTIL}" -V setup_range "${DEV}" --locking-range 1 --locking-range-start 0 --locking-range-length 512 --user 1 --user 2 --user 4 --verify-pin "${ADMIN_PIN}" &>>"${LOG_FILE}"
+"${OPAL_UTIL}" -V unlock "${DEV}" --user 1 --verify-pin "${USER_1_PIN}" --locking-range 1 --read-locked 1 --write-locked 1 &>>"${LOG_FILE}"
+"${OPAL_UTIL}" -V unlock "${DEV}" --user 1 --verify-pin "${USER_1_PIN}" --locking-range 1 --read-locked 1 &>>"${LOG_FILE}"
+"${OPAL_UTIL}" list_range $DEV --locking-range 1 --user 1 --verify-pin "${USER_1_PIN}" &>>"${LOG_FILE}"
 unreadable "${DEV}"
 
 echo "programmatic reset"
@@ -125,14 +126,14 @@ readable "${DEV}"
 printf "  after writing while read-locked:   "
 head "${DEV}" -c 16 | hexdump | head -n 1 || true
 
+"${OPAL_UTIL}" psid_revert "${DEV}" --verify-pin "${PSID}" &>>"${LOG_FILE}"
+
 echo ""
 echo "results:"
 if [[ "${failed}" -eq 0 ]]; then
   echo "ok"
-
   exit 0
 else
   echo "failed ${failed} tests"
-
   exit 1
 fi
