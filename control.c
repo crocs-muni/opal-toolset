@@ -351,9 +351,9 @@ int main(int argc, char **argv)
     }
 
     if (args.command == CMD_UNLOCK) {
-        err = unlock_range(&dev, args.locking_range, args.user[0], 
-                           args.read_locked, args.write_locked, 
-                           args.verify_pin, args.verify_pin_len);
+        err = unlock_range(&dev, args.locking_range,
+                           args.read_locked, args.write_locked,
+                           args.verify_pin, args.verify_pin_len, args.user[0]);
     } else if (args.command == CMD_SETUP_RANGE) {
         err = setup_range(&dev, args.locking_range, 
                           args.verify_pin, args.verify_pin_len, 
@@ -368,7 +368,8 @@ int main(int argc, char **argv)
         err = setup_tper(&dev, args.assign_pin, args.assign_pin_len,
                          args.sum, args.locking_range, args.sum_range_admin);
         if (!err)
-            err = setup_programmatic_reset(&dev, args.assign_pin, args.assign_pin_len, -1);
+            err = setup_programmatic_reset(&dev, -1,
+                                           args.assign_pin, args.assign_pin_len, ADMIN_BASE_ID + 1);
     } else if (args.command == CMD_PSID_REVERT) {
         err = psid_revert(&dev, args.verify_pin, args.verify_pin_len);
     } else if (args.command == CMD_RESET) {
@@ -376,8 +377,8 @@ int main(int argc, char **argv)
     } else if (args.command == CMD_STACK_RESET) {
         err = stack_reset(&dev);
     } else if (args.command == CMD_REGENERATE_KEY) {
-        err = regenerate_key(&dev, args.locking_range, 
-                             args.verify_pin, args.verify_pin_len);
+        err = regenerate_range(&dev, args.locking_range,
+                               args.verify_pin, args.verify_pin_len, ADMIN_BASE_ID + 1);
     } else if (args.command == CMD_LIST_RANGE) {
         err = list_range(&dev, args.locking_range,
                          args.verify_pin, args.verify_pin_len, args.user[0]);

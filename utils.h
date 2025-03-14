@@ -11,24 +11,29 @@ struct disk_device;
 
 #define ALL_LOCKING_RANGES 0xff
 
-int unlock_range(struct disk_device *dev, unsigned char locking_range, size_t user_uid, 
+int unlock_range(struct disk_device *dev, unsigned char locking_range,
                  char read_locked, char write_locked, 
-                 unsigned char *challenge, size_t challenge_len);
+                 unsigned char *challenge, size_t challenge_len, size_t user);
 
 int setup_range(struct disk_device *dev, unsigned char locking_range,
                 unsigned char *challenge, size_t challenge_len,
                 uint64_t start, uint64_t length,
                 size_t users[], size_t users_len, bool sum);
 
-int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *challenge, size_t challenge_len, size_t user);
+int list_range(struct disk_device *dev, unsigned locking_range,
+               unsigned char *challenge, size_t challenge_len, size_t user);
+
+int regenerate_range(struct disk_device *dev, unsigned char locking_range,
+                     unsigned char *challenge, size_t challenge_len, size_t user);
+
 
 int setup_user(struct disk_device *dev, size_t user_uid,
                unsigned char *admin_pin, size_t admin_pin_len,
                unsigned char *user_pin, size_t user_pin_len,
                bool sum, unsigned char sum_locking_range);
 
-int setup_programmatic_reset(struct disk_device *dev, const unsigned char *pwd, size_t pwd_len, 
-                             char locking_range);
+int setup_programmatic_reset(struct disk_device *dev, char locking_range,
+               unsigned char *challenge, size_t challenge_len, size_t user);
 
 int tper_reset(struct disk_device *dev);
 int stack_reset(struct disk_device *dev);
@@ -44,8 +49,5 @@ int psid_revert(struct disk_device *dev, const unsigned char *psid, size_t psid_
 int get_random(struct disk_device *dev, unsigned char *output, size_t output_len);
 
 int get_random_session(struct disk_device *dev, unsigned char *output, size_t output_len);
-
-int regenerate_key(struct disk_device *dev, unsigned char locking_range,
-                   unsigned char *admin_pin, size_t admin_pin_len);
 
 #endif // UTILS_H_

@@ -84,8 +84,9 @@ static int generate_locking_range_set_command(struct disk_device *dev, unsigned 
     return 0;
 }
 
-int unlock_range(struct disk_device *dev, unsigned char locking_range, size_t user_uid, char read_locked,
-                 char write_locked, unsigned char *challenge, size_t challenge_len)
+int unlock_range(struct disk_device *dev, unsigned char locking_range,
+                 char read_locked, char write_locked,
+                 unsigned char *challenge, size_t challenge_len, size_t user)
 {
     int err = 0;
 
@@ -98,7 +99,7 @@ int unlock_range(struct disk_device *dev, unsigned char locking_range, size_t us
         return -1;
     }
 
-    if ((err = start_session(dev, LOCKING_SP_UID, user_uid, challenge, challenge_len))) {
+    if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
         LOG(ERROR, "Failed when setting starting session for setting locking range parameters.\n");
         return err;
     }
@@ -224,7 +225,8 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
     return err;
 }
 
-int list_range(struct disk_device *dev, unsigned locking_range, unsigned char *challenge, size_t challenge_len, size_t user)
+int list_range(struct disk_device *dev, unsigned locking_range,
+               unsigned char *challenge, size_t challenge_len, size_t user)
 {
     int err = 0;
     unsigned char locking_range_uid_str[9] = { 0 };
@@ -382,18 +384,18 @@ int setup_user(struct disk_device *dev, size_t user_uid,
     return err;
 }
 
-int setup_programmatic_reset(struct disk_device *dev, const unsigned char *pwd, size_t pwd_len, 
-                             char locking_range)
+int setup_programmatic_reset(struct disk_device *dev, char locking_range,
+               unsigned char *challenge, size_t challenge_len, size_t user)
 {
     int err = 0;
 
-    if (pwd_len == 0 || !pwd || !*pwd) {
+    if (challenge_len == 0 || !challenge || !*challenge) {
         LOG(ERROR, "PIN not specified.\n");
         return -1;
     }
 
     // Enable TPER_RESET command.
-    if ((err = start_session(dev, ADMIN_SP_UID, SID_USER_ID, pwd, pwd_len))) {
+    if ((err = start_session(dev, ADMIN_SP_UID, SID_USER_ID, challenge, challenge_len))) {
         LOG(ERROR, "Failed to start Admin SP session as SID.\n");
         return err;
     }
@@ -414,7 +416,7 @@ int setup_programmatic_reset(struct disk_device *dev, const unsigned char *pwd, 
 
     // Change LockOnReset for the locking range.
     if (locking_range >= 0) {
-        if ((err = start_session(dev, LOCKING_SP_UID, ADMIN_BASE_ID + 1, pwd, pwd_len))) {
+        if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
             LOG(ERROR, "Failed to start Admin SP session.\n");
             return err;
         }
@@ -820,8 +822,9 @@ int get_random_session(struct disk_device *dev, unsigned char *output, size_t ou
     return 0;
 }
 
-int regenerate_key(struct disk_device *dev, unsigned char locking_range, unsigned char *admin_pin,
-                   size_t admin_pin_len)
+int regenerate_range(struct disk_device *dev, unsigned char locking_range,
+                     unsigned char *challenge, size_t challenge_len, size_t user)
+
 {
     int err = 0;
     unsigned char locking_range_uid_str[8] = { 0 };
@@ -838,7 +841,7 @@ int regenerate_key(struct disk_device *dev, unsigned char locking_range, unsigne
         locking_range_uid_str[7] = locking_range;
     }
 
-    if ((err = start_session(dev, LOCKING_SP_UID, ADMIN_BASE_ID + 1, admin_pin, admin_pin_len))) {
+    if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
         LOG(ERROR, "Failed to initialise session.\n");
         goto cleanup;
     }
