@@ -225,7 +225,7 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
     return err;
 }
 
-int list_range(struct disk_device *dev, unsigned locking_range,
+int list_range(struct disk_device *dev, unsigned char locking_range,
                unsigned char *challenge, size_t challenge_len, size_t user)
 {
     int err = 0;
@@ -384,7 +384,7 @@ int setup_user(struct disk_device *dev, size_t user_uid,
     return err;
 }
 
-int setup_programmatic_reset(struct disk_device *dev, char locking_range,
+int setup_programmatic_reset(struct disk_device *dev, unsigned char locking_range,
                unsigned char *challenge, size_t challenge_len, size_t user)
 {
     int err = 0;
@@ -415,7 +415,7 @@ int setup_programmatic_reset(struct disk_device *dev, char locking_range,
         return err;
 
     // Change LockOnReset for the locking range.
-    if (locking_range >= 0) {
+    if (locking_range < ALL_LOCKING_RANGES) {
         if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
             LOG(ERROR, "Failed to start Admin SP session.\n");
             return err;

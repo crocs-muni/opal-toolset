@@ -20,7 +20,7 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
                 uint64_t start, uint64_t length,
                 size_t users[], size_t users_len, bool sum);
 
-int list_range(struct disk_device *dev, unsigned locking_range,
+int list_range(struct disk_device *dev, unsigned char locking_range,
                unsigned char *challenge, size_t challenge_len, size_t user);
 
 int regenerate_range(struct disk_device *dev, unsigned char locking_range,
@@ -32,7 +32,7 @@ int setup_user(struct disk_device *dev, size_t user_uid,
                unsigned char *user_pin, size_t user_pin_len,
                bool sum, unsigned char sum_locking_range);
 
-int setup_programmatic_reset(struct disk_device *dev, char locking_range,
+int setup_programmatic_reset(struct disk_device *dev, unsigned char locking_range,
                unsigned char *challenge, size_t challenge_len, size_t user);
 
 int tper_reset(struct disk_device *dev);
