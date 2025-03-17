@@ -44,6 +44,7 @@ static struct argp_option options_list_range[] = {
     { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of user authority", 0 },
     { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of user authority", 0 },
     { "user", ARG_KEY_USER, "id", 0, "User authority id", 0 },
+    { "admin", ARG_KEY_ADMIN, "id", 0, "Admin authority to authenticate as", 0 },
     { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "Locking range to list", 0 },
     { 0 }
 };
@@ -75,8 +76,10 @@ static struct argp_option options_psid_revert[] = {
 };
 
 static struct argp_option options_regenerate_key[] = {
-    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of Admin1 authority", 0 },
-    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of Admin1 authority", 0 },
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of the authority", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of the authority", 0 },
+    { "user", ARG_KEY_USER, "id", 0, "User authority to authenticate as", 0 },
+    { "admin", ARG_KEY_ADMIN, "id", 0, "Admin authority to authenticate as", 0 },
     { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "Locking range to re-generate", 0 },
     { 0 }
 };
@@ -386,10 +389,11 @@ int main(int argc, char **argv)
     } else if (args.command == CMD_STACK_RESET) {
         err = stack_reset(&dev);
     } else if (args.command == CMD_SETUP_RESET) {
-       err = setup_programmatic_reset(&dev, args.locking_range, args.verify_pin, args.verify_pin_len, ADMIN_BASE_ID + 1);
+       err = setup_programmatic_reset(&dev, args.locking_range, args.verify_pin,
+                                      args.verify_pin_len, ADMIN_BASE_ID + 1);
     } else if (args.command == CMD_REGENERATE_KEY) {
         err = regenerate_range(&dev, args.locking_range,
-                               args.verify_pin, args.verify_pin_len, ADMIN_BASE_ID + 1);
+                               args.verify_pin, args.verify_pin_len, args.user[0]);
     } else if (args.command == CMD_LIST_RANGE) {
         err = list_range(&dev, args.locking_range,
                          args.verify_pin, args.verify_pin_len, args.user[0]);
