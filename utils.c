@@ -125,7 +125,7 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
     size_t buffer_len = 0;
     unsigned char response[512] = { 0 };
 
-    if (challenge_len == 0 || !challenge || !*challenge) {
+    if (challenge_len == 0 || !challenge) {
         LOG(ERROR, "PIN not specified.\n");
         return -1;
     }
@@ -304,12 +304,12 @@ int setup_user(struct disk_device *dev, size_t user_uid,
 {
     int err = 0;
 
-    if (admin_pin_len == 0 || !admin_pin || !*admin_pin) {
+    if (admin_pin_len == 0 || !admin_pin) {
         LOG(ERROR, "Admin PIN not specified.\n");
         return -1;
     }
 
-    if (user_pin_len == 0 || !user_pin || !*user_pin) {
+    if (user_pin_len == 0 || !user_pin) {
         LOG(ERROR, "User PIN not specified.\n");
         return -1;
     }
@@ -389,7 +389,7 @@ int setup_programmatic_reset(struct disk_device *dev, unsigned char locking_rang
 {
     int err = 0;
 
-    if (challenge_len == 0 || !challenge || !*challenge) {
+    if (challenge_len == 0 || !challenge) {
         LOG(ERROR, "PIN not specified.\n");
         return -1;
     }
@@ -555,7 +555,7 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
     unsigned char msid[2048] = { 0 }, uid[9] = { 0 }, param[3];
     size_t msid_len = 0;
 
-    if (sid_pwd_len == 0 || !sid_pwd || !*sid_pwd) {
+    if (sid_pwd_len == 0 || !sid_pwd) {
         LOG(ERROR, "PIN not specified.\n");
         return -1;
     }
@@ -684,7 +684,7 @@ int psid_revert(struct disk_device *dev, const unsigned char *psid, size_t psid_
 
     LOG(INFO, "PSID revert\n");
 
-    if (psid_len == 0 || !psid || !*psid) {
+    if (psid_len == 0 || !psid) {
         LOG(ERROR, "PSID not specified.\n");
         return -1;
     }
