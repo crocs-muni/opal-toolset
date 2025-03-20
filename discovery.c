@@ -24,25 +24,21 @@ enum selection {
 
 static void print_comma_start(int *first)
 {
-    if (*first) {
+    if (*first)
         printf(",\n");
-    }
 
     *first = 1;
 }
 
 static void print_uid_key(const unsigned char *uid, int spaces, int is_first)
 {
-    if (!is_first) {
+    if (!is_first)
         printf(",\n");
-    }
-    for (int i = 0; i < spaces; ++i) {
+    for (int i = 0; i < spaces; ++i)
         printf(" ");
-    }
     printf("\"0x");
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < 8; ++i)
         printf("%02x", uid[i]);
-    }
     printf("\": {\n");
 }
 
@@ -481,13 +477,11 @@ static int print_properties(struct disk_device *dev)
 
     int first_entry = 0;
     while (i < sizeof(response)) {
-        if (response[i] == END_LIST_TOKEN) {
+        if (response[i] == END_LIST_TOKEN)
             break;
-        }
 
-        if (response[i++] != START_NAME_TOKEN) {
+        if (response[i++] != START_NAME_TOKEN)
             return 1;
-        }
 
         print_comma_start(&first_entry);
         printf("    \"");
@@ -496,9 +490,8 @@ static int print_properties(struct disk_device *dev)
         parse_and_print(response, &i, 0);
         printf("\"");
 
-        if (response[i++] != END_NAME_TOKEN) {
+        if (response[i++] != END_NAME_TOKEN)
             return 1;
-        }
     }
     printf("\n  }\n");
 
@@ -655,29 +648,25 @@ static void crawl_cb_print_row(unsigned char *response, size_t last, void *data)
 
     size_t i = 0;
 
-    if (response[i++] != START_LIST_TOKEN) {
+    if (response[i++] != START_LIST_TOKEN)
         LOG(ERROR, "Unexpected token.\n");
-    }
     if (response[i] == END_LIST_TOKEN) {
         i += 1;
         return;
     }
-    if (response[i++] != START_LIST_TOKEN) {
+    if (response[i++] != START_LIST_TOKEN)
         LOG(ERROR, "Unexpected token.\n");
-    }
 
     int first = 0;
     while (i < last) {
         if (response[i] == END_LIST_TOKEN) {
-            if (response[i + 0] != END_LIST_TOKEN || response[i + 1] != END_LIST_TOKEN) {
+            if (response[i + 0] != END_LIST_TOKEN || response[i + 1] != END_LIST_TOKEN)
                 LOG(ERROR, "Unexpected token.\n");
-            }
             i += 2;
             break;
         }
-        if (response[i++] != START_NAME_TOKEN) {
+        if (response[i++] != START_NAME_TOKEN)
             LOG(ERROR, "Unexpected token.\n");
-        }
         print_comma_start(&first);
         printf("        \"");
         parse_and_print(response, &i, 0);
@@ -739,9 +728,9 @@ static void crawl_cb_save_row(unsigned char *response, size_t last, void *data)
         return;
     }
     for (size_t i = 2; i < last; ++i) {
-        if (response[i] == END_LIST_TOKEN) {
+        if (response[i] == END_LIST_TOKEN)
             return;
-        } else if (response[i] == START_NAME_TOKEN) {
+        else if (response[i] == START_NAME_TOKEN) {
             i += 1;
 
             uint64_t column = parse_int(response, &i);
@@ -753,9 +742,8 @@ static void crawl_cb_save_row(unsigned char *response, size_t last, void *data)
             }
 
             skip_atom(response, &i, last);
-            if (response[i] != END_NAME_TOKEN) {
+            if (response[i] != END_NAME_TOKEN)
                 LOG(ERROR, "Found unexpected token.\n");
-            }
         } else {
             LOG(ERROR, "Found unexpected token.\n");
         }
@@ -769,7 +757,6 @@ static int crawl_table_row(struct disk_device *dev, unsigned char *uidref, crawl
     unsigned char buffer[2048] = { 0 };
     size_t i = 0;
     unsigned char response[2048] = { 0 };
-
 
     prepare_method(buffer, &i, dev, uidref, METHOD_GET_UID);
     start_list(buffer, &i);
@@ -809,36 +796,31 @@ static int crawl_table(struct disk_device *dev, const unsigned char *table_uid, 
     */
     prepare_method(buffer, &i, dev, table_uid, METHOD_NEXT_UID);
     finish_method(buffer, &i);
-    if ((err = invoke_method(dev, buffer, i, response, sizeof(response)))) {
+    if ((err = invoke_method(dev, buffer, i, response, sizeof(response))))
         return err;
-    }
 
     skip_to_parameter(response, &i, 0, 0);
-    if (response[i++] != START_LIST_TOKEN) {
+    if (response[i++] != START_LIST_TOKEN)
         return 1;
-    }
 
     int first = 0;
     while (i < sizeof(response)) {
-        if (response[i++] != 0xa8) {
+        if (response[i++] != 0xa8)
             break;
-        }
 
         if (printing) {
             print_comma_start(&first);
             print_uid_key(response + i, 6, 1);
         }
         crawl_table_row(dev, response + i, cb, cb_data);
-        if (printing) {
+        if (printing)
             printf("      }");
-        }
 
         i += 8;
     }
 
-    if (printing) {
+    if (printing)
         printf("\n");
-    }
 
     return err;
 }
@@ -920,23 +902,20 @@ static int crawl_tper(struct disk_device *dev)
                 row_uid[7] = 0x01;
 
                 print_uid_key(row_uid, 6, 1);
-                if ((err = crawl_table_row(dev, row_uid, crawl_cb_print_row, NULL))) {
+                if ((err = crawl_table_row(dev, row_uid, crawl_cb_print_row, NULL)))
                     printf("        \"error\": \"%s (%i)\"\n", error_to_string(err), err);
-                }
                 printf("      },\n");
 
                 // Try row XX XX XX XX 00 03 00 01 (e.g. TPerInfoObj).
                 row_uid[5] = 0x03;
 
                 print_uid_key(row_uid, 6, 1);
-                if ((err = crawl_table_row(dev, row_uid, crawl_cb_print_row, NULL))) {
+                if ((err = crawl_table_row(dev, row_uid, crawl_cb_print_row, NULL)))
                     printf("        \"error\": \"%s (%i)\"\n", error_to_string(err), err);
-                }
                 printf("      }\n");
             }
-            if ((err = close_session(dev))) {
+            if ((err = close_session(dev)))
                 LOG(ERROR, "Failed to close a session.\n");
-            }
             printf("    }");
         }
         printf("\n  }");
@@ -1156,13 +1135,11 @@ static int print_discovery(struct disk_device *dev, int selection)
         printf("\"Discovery 2 manual\": {\n");
         for (size_t entry = 0; entry < list_size; ++entry) {
             printf("  \"0x");
-            for (int i = 0; i < 8; ++i) {
+            for (int i = 0; i < 8; ++i)
                 printf("%02x", manual_discovery_list[entry][i]);
-            }
             printf("\": {\n");
-            if ((err = print_single_row(dev, manual_discovery_list[entry], ADMIN_SP_UID))) {
+            if ((err = print_single_row(dev, manual_discovery_list[entry], ADMIN_SP_UID)))
                 printf("    \"error\": \"%s\"\n", error_to_string(err));
-            }
             printf("  }%s\n", entry == (list_size - 1) ? "" : ",");
         }
         printf("}");
@@ -1232,20 +1209,17 @@ int main(int argc, char **argv)
     switch (argc) {
     case 4:
         current_log_level = atoi(argv[3]);
-        if (current_log_level < ERROR || current_log_level > EVERYTHING) {
+        if (current_log_level < ERROR || current_log_level > EVERYTHING)
             print_usage(argv[0]);
-        }
         // fallthrough
     case 3:
         selection = atoi(argv[2]);
-        if (selection > 7) {
+        if (selection > 7)
             print_usage(argv[0]);
-        }
         // fallthrough
     case 2:
-        if (argv[1][0] == '-') {
+        if (argv[1][0] == '-')
             print_usage(argv[0]);
-        }
         dev_file = argv[1];
         break;
     default:
@@ -1253,9 +1227,8 @@ int main(int argc, char **argv)
     }
 
     struct disk_device dev = { 0 };
-    if ((err = disk_device_open(&dev, dev_file, use_scsi_sec))) {
+    if ((err = disk_device_open(&dev, dev_file, use_scsi_sec)))
         return err;
-    }
 
     err = print_discovery(&dev, selection);
 

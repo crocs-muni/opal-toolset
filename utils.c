@@ -197,13 +197,13 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
     end_list(boolean_ace, &boolean_ace_len);
 
     for (i = 0; i < 3; ++i) {
-        if (i == 0) {
+        if (i == 0)
             memcpy(ace_uid, TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_RD_LOCKED, 8);
-        } else if (i == 1) {
+        else if (i == 1)
             memcpy(ace_uid, TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_WR_LOCKED, 8);
-        } else {
+        else
             memcpy(ace_uid, TABLE_ACE_LOCKING_RANGE_XXXX_GET_PARAMS, 8);
-        }
+
         hex_add(ace_uid, 8, locking_range);
 
         if ((err = set_row(dev, ace_uid, TABLE_ACE_COLUMN_BOOLEAN_EXPR, boolean_ace, boolean_ace_len))) {
@@ -213,8 +213,7 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
         }
     }
 
-    err = close_session(dev);
-    return err;
+    return close_session(dev);
 }
 
 int list_range(struct disk_device *dev, unsigned char locking_range,
@@ -366,8 +365,7 @@ int setup_user(struct disk_device *dev, size_t user_uid,
         return err;
     }
 
-    err = close_session(dev);
-    return err;
+    return close_session(dev);
 }
 
 int setup_programmatic_reset(struct disk_device *dev, unsigned char locking_range,
@@ -437,9 +435,8 @@ int tper_reset(struct disk_device *dev)
 
     LOG(INFO, "TPer reset\n");
 
-    if ((err = trusted_command(dev, buffer, sizeof(buffer), IF_SEND, TCG_PROTOCOL_ID_2, TPER_RESET_COMID))) {
+    if ((err = trusted_command(dev, buffer, sizeof(buffer), IF_SEND, TCG_PROTOCOL_ID_2, TPER_RESET_COMID)))
         LOG(ERROR, "Failed to send programmatic reset.\n");
-    }
 
     return err;
 }
@@ -750,8 +747,7 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
         return err;
     }
 
-    err = close_session(dev);
-    return err;
+    return close_session(dev);
 }
 
 int psid_revert(struct disk_device *dev, const unsigned char *psid, size_t psid_len)
@@ -922,13 +918,15 @@ int regenerate_range(struct disk_device *dev, unsigned char locking_range,
 
     if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
         LOG(ERROR, "Failed to initialise session.\n");
-        goto cleanup;
+        close_session(dev);
+        return err;
     }
 
     if ((err = get_row_bytes(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_ACTIVE_KEY, active_key_uid,
                              sizeof(active_key_uid), NULL))) {
         LOG(ERROR, "Failed to get key type used in the locking range.\n");
-        goto cleanup;
+        close_session(dev);
+        return err;
     }
 
     /*
@@ -943,12 +941,11 @@ int regenerate_range(struct disk_device *dev, unsigned char locking_range,
 
     if ((err = invoke_method(dev, command, command_len, command, sizeof(command)))) {
         LOG(ERROR, "Failed to re-generate the key.\n");
-        goto cleanup;
+        close_session(dev);
+        return err;
     }
 
-cleanup:
-    close_session(dev);
-    return err;
+    return close_session(dev);
 }
 
 int erase_range(struct disk_device *dev, unsigned char locking_range,
@@ -988,9 +985,11 @@ int erase_range(struct disk_device *dev, unsigned char locking_range,
     prepare_method(command, &command_len, dev, locking_range_uid_str, METHOD_ERASE_UID);
     finish_method(command, &command_len);
 
-    if ((err = invoke_method(dev, command, command_len, command, sizeof(command))))
+    if ((err = invoke_method(dev, command, command_len, command, sizeof(command)))) {
         LOG(ERROR, "Failed to erase locking range.\n");
+        close_session(dev);
+        return err;
+    }
 
-    close_session(dev);
-    return err;
+    return close_session(dev);
 }

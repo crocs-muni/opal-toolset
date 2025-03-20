@@ -178,9 +178,8 @@ static int tcg_discovery_0_process_response(struct disk_device *dev, void *data)
         struct level_0_discovery_feature_shared *body =
                 (struct level_0_discovery_feature_shared *)((unsigned char *)data + offset);
 
-        if ((err = tcg_discovery_0_process_feature(dev, body, be16_to_cpu(body->feature_code)))) {
+        if ((err = tcg_discovery_0_process_feature(dev, body, be16_to_cpu(body->feature_code))))
             return err;
-        }
 
         offset += body->length + sizeof(struct level_0_discovery_feature_shared);
     }
@@ -207,16 +206,14 @@ static void log_packet_data(const unsigned char *response, int comID)
     }
 
     for (x = 0; x < length; ++x) {
-        if (session && x == sizeof(struct packet_headers)) {
+        if (session && x == sizeof(struct packet_headers))
             LOG_C(EVERYTHING, "| ");
-        }
         if (l == 2) {
             LOG_C(EVERYTHING, "%02x(%s) ", response[x], error_to_string(response[x]));
             l = 0;
             continue;
-        } else if (l > 0) {
+        } else if (l > 0)
             l++;
-        }
 
         switch (response[x]) {
         case END_OF_DATA_TOKEN:
@@ -245,11 +242,10 @@ static void log_packet_data(const unsigned char *response, int comID)
             name = NULL;
             break;
         }
-        if (name) {
+        if (name)
             LOG_C(EVERYTHING, "%02x[%s] ", response[x], name);
-        } else {
+        else
             LOG_C(EVERYTHING, "%02x ", response[x]);
-        }
     }
     LOG_C(EVERYTHING, "\n");
 }
@@ -278,9 +274,8 @@ static int nvme_security_command(int fd, uint8_t *buffer, size_t buffer_len,
     LOG(EVERYTHING, "Packet %s:\n", direction == IF_RECV ? "received" : "sent");
     log_packet_data(buffer, comID);
 
-    if (err != 0) {
+    if (err != 0)
         LOG(ERROR, "Problem with sending NVMe Security command: %s.\n", strerror(errno));
-    }
 
     return err;
 }
@@ -308,16 +303,14 @@ static int scsi_send_cdb(int fd, uint8_t *cdb, size_t cdb_len,
     LOG(EVERYTHING, "Packet %s:\n", direction == IF_RECV ? "received" : "sent");
     log_packet_data(response, comID);
 
-    if (err != 0) {
+    if (err != 0)
         LOG(ERROR, "Problem with sending ATA Trusted command: %s.\n", strerror(errno));
-    }
 
     if (sense[0] != 0 || sense[1] != 0) {
         err = -1;
         LOG(ERROR, "Received sense code: ");
-        for (size_t i = 0; i < sizeof(sense); ++i) {
+        for (size_t i = 0; i < sizeof(sense); ++i)
             LOG_C(ERROR, "%02x ", sense[i]);
-        }
         LOG_C(ERROR, "\n");
     }
 
@@ -474,9 +467,9 @@ uint64_t parse_int(const unsigned char *buffer, size_t *i)
         }
 
         return result;
-    } else {
-        return UINT64_MAX;
     }
+
+    return UINT64_MAX;
 }
 
 int process_method_response(const unsigned char *buffer, size_t buffer_len)
@@ -518,27 +511,24 @@ int process_method_response(const unsigned char *buffer, size_t buffer_len)
         return -1;
     }
 
-    if (data[i] == END_OF_SESSION_TOKEN) {
+    if (data[i] == END_OF_SESSION_TOKEN)
         return 0;
-    }
 
     if (data[i] == CALL_TOKEN) {
         i += 1;
 
         // session manager method
 
-        if (data[i++] != 0xa8) {
+        if (data[i++] != 0xa8)
             return 1;
-        }
         if (memcmp(data + i, SMUID, 8) != 0) {
             LOG(ERROR, "Got SMUID method from non-SMUID invoker.\n");
             return -1;
         }
         i += 8; // invokid uid
 
-        if (data[i++] != 0xa8) {
+        if (data[i++] != 0xa8)
             return 1;
-        }
         if (memcmp(data + i, METHOD_CLOSE_SESSION_UID, 8) == 0) {
             LOG(ERROR, "Probably unexpected close session.\n");
             return -1;
@@ -560,17 +550,16 @@ int process_method_response(const unsigned char *buffer, size_t buffer_len)
             data_tail[5] != 00 ||
             data_tail[6] != END_LIST_TOKEN) {
 
-            if (data_tail[6] == EMPTY_ATOM_TOKEN) {
+            if (data_tail[6] == EMPTY_ATOM_TOKEN)
                 continue;
-            } else {
+            else {
                 LOG(ERROR, "Received unexpected tokens.\n");
                 return -1;
             }
         }
 
-        if ((status_code = data_tail[3]) != MSC_SUCCESS) {
+        if ((status_code = data_tail[3]) != MSC_SUCCESS)
             LOG(ERROR, "Received non-successful status code: %s.\n", error_to_string(status_code));
-        }
 
         return status_code;
     }
@@ -664,18 +653,13 @@ int do_level_0_discovery(struct disk_device *dev)
     LOG(INFO, "Sending discovery0 command.\n");
 
     if ((err = trusted_command(dev, response, sizeof(response), IF_RECV, TCG_PROTOCOL_ID_1,
-                               TCG_LEVEL_0_DISCOVERY_COMID))) {
+                               TCG_LEVEL_0_DISCOVERY_COMID)))
         return err;
-    }
 
     /* Wipe previous response data */
     memset(&dev->features, 0, sizeof(dev->features));
 
-    if ((err = tcg_discovery_0_process_response(dev, response))) {
-        return err;
-    }
-
-    return err;
+    return tcg_discovery_0_process_response(dev, response);
 }
 static int generate_start_session_method(struct disk_device *dev, unsigned char *buffer, size_t *i, const unsigned char *spid,
                                          size_t spid_len, const unsigned char *host_challenge, size_t host_challenge_len,
@@ -775,9 +759,8 @@ int start_session(struct disk_device *dev, const unsigned char *SPID, size_t use
       InitialCredit = uinteger,
       SignedHash = bytes ]
     */
-    if ((err = skip_to_parameter(buffer, &i, 0, 0))) {
+    if ((err = skip_to_parameter(buffer, &i, 0, 0)))
         return err;
-    }
     dev->host_session_id = be32_to_cpu(parse_int(buffer, &i));
     dev->sp_session_id = be32_to_cpu(parse_int(buffer, &i));
     LOG(INFO, "Created session with HostSessionID 0x%x and SPSessionID 0x%x.\n", 
@@ -806,10 +789,9 @@ int close_session(struct disk_device *dev)
     end_session_token(buffer, &i);
     finish_headers(buffer, &i);
 
-    if ((err = invoke_method(dev, buffer, i, buffer, sizeof(buffer)))) {
+    if ((err = invoke_method(dev, buffer, i, buffer, sizeof(buffer))))
         LOG(ERROR, "Failed to close session with HostSessionID 0x%x and SPSessionID 0x%x\n", 
             dev->host_session_id, dev->sp_session_id);
-    }
 
     wipe_session(dev);
 
@@ -858,27 +840,22 @@ int parse_bytes(const unsigned char *src, size_t *offset, unsigned char *dst, si
 
         len = ((src[i + 0]) << 16) | ((src[i + 1]) << 8) | ((src[i + 2]) << 0);
         i += 3;
-    } else {
+    } else
         return 1;
-    }
 
     if (dst) {
-        if (len > dst_size) {
+        if (len > dst_size)
             return 1;
-        }
 
-        for (j = 0; j < len; ++j) {
+        for (j = 0; j < len; ++j)
             dst[j] = src[i + j];
-        }
     }
     i += len;
 
-    if (offset) {
+    if (offset)
         *offset = i;
-    }
-    if (written) {
+    if (written)
         *written = len;
-    }
 
     return 0;
 }
@@ -899,9 +876,8 @@ int skip_atom(const unsigned char *src, size_t *offset, size_t total_length)
         *offset += 3 + (((src[*offset + 0]) << 16) | ((src[*offset + 1]) << 8) | ((src[*offset + 2]) << 0));
     } else if (src[*offset] == START_LIST_TOKEN) {
         *offset += 1;
-        while (src[*offset] != END_LIST_TOKEN) {
+        while (src[*offset] != END_LIST_TOKEN)
             skip_atom(src, offset, total_length);
-        }
         *offset += 1;
     } else if (src[*offset] == END_LIST_TOKEN) {
         *offset += 1;
@@ -909,9 +885,8 @@ int skip_atom(const unsigned char *src, size_t *offset, size_t total_length)
         *offset += 1;
         skip_atom(src, offset, total_length);
         skip_atom(src, offset, total_length);
-        if (src[*offset] != END_NAME_TOKEN) {
+        if (src[*offset] != END_NAME_TOKEN)
             return 1;
-        }
         *offset += 1;
     } else if (src[*offset] == END_NAME_TOKEN) {
         *offset += 1;
@@ -928,45 +903,39 @@ int skip_to_parameter(unsigned char *src, size_t *offset, int parameter, int ski
     int j;
     uint64_t parsed_index;
 
-    if (src[*offset] == START_LIST_TOKEN) {
+    if (src[*offset] == START_LIST_TOKEN)
         *offset += 1;
-    } else if (src[*offset] == CALL_TOKEN) {
+    else if (src[*offset] == CALL_TOKEN)
         *offset += 20;
-    } else {
+    else
         return 1;
-    }
 
     if (!skip_mandatory) {
         // getting mandatory argument
 
-        if (*offset >= len) {
+        if (*offset >= len)
             return 1;
-        }
 
         // skip previous arguments
-        for (j = 0; j < parameter - 1; ++j) {
+        for (j = 0; j < parameter - 1; ++j)
             skip_atom(src, offset, len);
-        }
 
         return 0;
     } else {
         // getting optional argument
 
         // skip all mandatory arguments
-        for (j = 0; j < skip_mandatory; ++j) {
+        for (j = 0; j < skip_mandatory; ++j)
             skip_atom(src, offset, len);
-        }
 
         while (*offset < len) {
-            if (*offset >= len || src[*offset] != START_NAME_TOKEN) {
+            if (*offset >= len || src[*offset] != START_NAME_TOKEN)
                 return 1;
-            }
 
             tmp = *offset + 1;
             parsed_index = parse_int(src, &tmp);
-            if (parsed_index == (uint64_t)parameter) {
+            if (parsed_index == (uint64_t)parameter)
                 return 0;
-            }
 
             skip_atom(src, offset, len);
         }
@@ -1045,16 +1014,14 @@ int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, unsi
     }
     finish_method(buffer, &i);
 
-    if ((err = invoke_method(dev, buffer, i, buffer, sizeof(buffer)))) {
-        close_session(dev);
+    if ((err = invoke_method(dev, buffer, i, buffer, sizeof(buffer))))
         return err;
-    }
 
     pos = sizeof(struct packet_headers);
     if (buffer[pos + 0] != START_LIST_TOKEN || buffer[pos + 1] != START_LIST_TOKEN ||
         buffer[pos + 2] != START_NAME_TOKEN) {
         LOG(ERROR, "Unexpected tokens received.\n");
-        goto cleanup;
+        return err;
     }
     pos += 3;
     if (parse_int(buffer, &pos) != column) {
@@ -1066,7 +1033,6 @@ int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, unsi
         return err;
     }
 
-cleanup:
     return err;
 }
 
@@ -1102,10 +1068,8 @@ int get_row_int(struct disk_device *dev, const unsigned char *object_uid, unsign
     }
     finish_method(buffer, &i);
 
-    if ((err = invoke_method(dev, buffer, i, buffer, sizeof(buffer)))) {
-        close_session(dev);
+    if ((err = invoke_method(dev, buffer, i, buffer, sizeof(buffer))))
         return err;
-    }
 
     pos = sizeof(struct packet_headers);
     LOG(EVERYTHING, "Packet headers size: %zu.\n", pos);

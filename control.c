@@ -185,9 +185,8 @@ static error_t parse_opt_pin(char *source, unsigned char *target, size_t *target
 {
     size_t pin_len = strlen(source);
 
-    if (pin_len > PIN_MAX_LEN) {
+    if (pin_len > PIN_MAX_LEN)
         return 1;
-    }
 
     *target_len = pin_len;
     strncpy((char *)target, source, PIN_MAX_LEN);
@@ -198,17 +197,15 @@ static error_t parse_opt_hex(const char *source, unsigned char *target, size_t *
 {
     size_t i, pin_len = strlen(source);
 
-    if (pin_len > 2 * PIN_MAX_LEN || pin_len % 2 != 0) {
+    if (pin_len > 2 * PIN_MAX_LEN || pin_len % 2 != 0)
         return 1;
-    }
 
     pin_len /= 2;
     unsigned char c;
 
     for (i = 0; i < pin_len; i++) {
-        if (sscanf(source, "%2hhx", &c) != 1) {
+        if (sscanf(source, "%2hhx", &c) != 1)
             return 1;
-        }
 
         target[i] = c;
         source += 2;
@@ -220,13 +217,12 @@ static error_t parse_opt_hex(const char *source, unsigned char *target, size_t *
 
 static error_t parse_opt_bool(const char *source, int8_t *target)
 {
-    if (source[0] == '0' && source[1] == 0) {
+    if (source[0] == '0' && source[1] == 0)
         *target = 0;
-    } else if (source[0] == '1' && source[1] == 0) {
+    else if (source[0] == '1' && source[1] == 0)
         *target = 1;
-    } else {
+    else
         return 1;
-    }
 
     return 0;
 }
@@ -239,9 +235,8 @@ static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
     switch (key) {
     case ARGP_KEY_INIT:
         // NOTE: 'state->root_argp->children[i].argp' does not seem to be correct.
-        for (i = 0; i < 8; i++) {
+        for (i = 0; i < 8; i++)
             state->child_inputs[i] = arguments;
-        }
         break;
     case ARG_KEY_VERBOSE:
         current_log_level = current_log_level == EVERYTHING ? EVERYTHING : current_log_level + 1;
@@ -252,31 +247,31 @@ static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
     case ARGP_KEY_ARG:
         switch (arguments->parsed) {
         case 0:
-            if (strcmp(arg, "unlock") == 0) {
+            if (strcmp(arg, "unlock") == 0)
                 arguments->command = CMD_UNLOCK;
-            } else if (strcmp(arg, "setup_range") == 0) {
+            else if (strcmp(arg, "setup_range") == 0)
                 arguments->command = CMD_SETUP_RANGE;
-            } else if (strcmp(arg, "setup_user") == 0) {
+            else if (strcmp(arg, "setup_user") == 0)
                 arguments->command = CMD_SETUP_USER;
-            } else if (strcmp(arg, "setup_tper") == 0) {
+            else if (strcmp(arg, "setup_tper") == 0)
                 arguments->command = CMD_SETUP_TPER;
-            } else if (strcmp(arg, "psid_revert") == 0) {
+            else if (strcmp(arg, "psid_revert") == 0)
                 arguments->command = CMD_PSID_REVERT;
-            } else if (strcmp(arg, "reset") == 0) {
+            else if (strcmp(arg, "reset") == 0)
                 arguments->command = CMD_RESET;
-            } else if (strcmp(arg, "stack_reset") == 0) {
+            else if (strcmp(arg, "stack_reset") == 0)
                 arguments->command = CMD_STACK_RESET;
-            } else if (strcmp(arg, "setup_reset") == 0) {
+            else if (strcmp(arg, "setup_reset") == 0)
                 arguments->command = CMD_SETUP_RESET;
-            } else if (strcmp(arg, "regenerate_key") == 0) {
+            else if (strcmp(arg, "regenerate_key") == 0)
                 arguments->command = CMD_REGENERATE_KEY;
-            } else if (strcmp(arg, "erase_range") == 0) {
+            else if (strcmp(arg, "erase_range") == 0)
                 arguments->command = CMD_ERASE_RANGE;
-            } else if (strcmp(arg, "list_range") == 0) {
+            else if (strcmp(arg, "list_range") == 0)
                 arguments->command = CMD_LIST_RANGE;
-            } else if (strcmp(arg, "setup_reactivate") == 0) {
+            else if (strcmp(arg, "setup_reactivate") == 0)
                 arguments->command = CMD_SETUP_REACTIVATE;
-            } else {
+            else {
                 printf("Unexpected command.\n");
                 return ARGP_ERR_UNKNOWN;
             }
@@ -390,50 +385,49 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if ((err = disk_device_open(&dev, args.device, args.use_scsi_sec))) {
+    if ((err = disk_device_open(&dev, args.device, args.use_scsi_sec)))
         return err;
-    }
 
-    if (args.command == CMD_UNLOCK) {
+    if (args.command == CMD_UNLOCK)
         err = unlock_range(&dev, args.locking_range,
                            args.read_locked, args.write_locked,
                            args.verify_pin, args.verify_pin_len, args.user[0]);
-    } else if (args.command == CMD_SETUP_RANGE) {
+    else if (args.command == CMD_SETUP_RANGE)
         err = setup_range(&dev, args.locking_range, 
                           args.verify_pin, args.verify_pin_len, 
                           args.locking_range_start, args.locking_range_length, 
                           args.user, args.user_count, args.sum);
-    } else if (args.command == CMD_SETUP_USER) {
+    else if (args.command == CMD_SETUP_USER)
         err = setup_user(&dev, args.user[0], 
                          args.verify_pin, args.verify_pin_len,
                          args.assign_pin, args.assign_pin_len,
                          args.sum, args.locking_range);
-    } else if (args.command == CMD_SETUP_TPER) {
+    else if (args.command == CMD_SETUP_TPER)
         err = setup_tper(&dev, args.assign_pin, args.assign_pin_len,
                          args.sum, args.locking_range, args.sum_range_admin);
-    } else if (args.command == CMD_PSID_REVERT) {
+    else if (args.command == CMD_PSID_REVERT)
         err = psid_revert(&dev, args.verify_pin, args.verify_pin_len);
-    } else if (args.command == CMD_RESET) {
+    else if (args.command == CMD_RESET)
         err = tper_reset(&dev);
-    } else if (args.command == CMD_STACK_RESET) {
+    else if (args.command == CMD_STACK_RESET)
         err = stack_reset(&dev);
-    } else if (args.command == CMD_SETUP_RESET) {
+    else if (args.command == CMD_SETUP_RESET)
        err = setup_programmatic_reset(&dev, args.locking_range, args.verify_pin,
                                       args.verify_pin_len, ADMIN_BASE_ID + 1);
-    } else if (args.command == CMD_REGENERATE_KEY) {
+    else if (args.command == CMD_REGENERATE_KEY)
         err = regenerate_range(&dev, args.locking_range,
                                args.verify_pin, args.verify_pin_len, args.user[0]);
-    } else if (args.command == CMD_ERASE_RANGE) {
+    else if (args.command == CMD_ERASE_RANGE)
         err = erase_range(&dev, args.locking_range,
                           args.verify_pin, args.verify_pin_len, ADMIN_BASE_ID + 1);
-    } else if (args.command == CMD_LIST_RANGE) {
+    else if (args.command == CMD_LIST_RANGE)
         err = list_range(&dev, args.locking_range,
                          args.verify_pin, args.verify_pin_len, args.user[0]);
-    } else if (args.command == CMD_SETUP_REACTIVATE) {
+    else if (args.command == CMD_SETUP_REACTIVATE)
         err = setup_reactivate(&dev, args.locking_range,
                                args.sum, args.sum_range_admin,
                                args.verify_pin, args.verify_pin_len);
-    } else {
+    else {
         printf("Invalid command.\n");
         err = 1;
     }
