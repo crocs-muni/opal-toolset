@@ -838,7 +838,7 @@ int regenerate_range(struct disk_device *dev, unsigned char locking_range,
         memcpy(locking_range_uid_str, LOCKING_RANGE_GLOBAL_UID, 8);
     } else {
         memcpy(locking_range_uid_str, LOCKING_RANGE_NNNN_UID, 8);
-        locking_range_uid_str[7] = locking_range;
+        hex_add(locking_range_uid_str, 8, locking_range);
     }
 
     if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
@@ -872,6 +872,55 @@ int regenerate_range(struct disk_device *dev, unsigned char locking_range,
     }
 
 cleanup:
+    close_session(dev);
+    return err;
+}
+
+int erase_range(struct disk_device *dev, unsigned char locking_range,
+                     unsigned char *challenge, size_t challenge_len, size_t user)
+
+{
+    int err = 0;
+    unsigned char locking_range_uid_str[8] = { 0 };
+    unsigned char command[512] = { 0 };
+    size_t command_len = 0;
+
+    if (locking_range == ALL_LOCKING_RANGES) {
+        LOG(ERROR, "LR must be specified.\n");
+        return -1;
+    }
+
+    if (locking_range == 0) {
+        memcpy(locking_range_uid_str, LOCKING_RANGE_GLOBAL_UID, 8);
+    } else {
+        memcpy(locking_range_uid_str, LOCKING_RANGE_NNNN_UID, 8);
+        hex_add(locking_range_uid_str, 8, locking_range);
+    }
+
+    if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
+        LOG(ERROR, "Failed to initialise session.\n");
+        close_session(dev);
+        return err;
+    }
+
+    if (!dev->features.single_user_mode.shared.feature_code) {
+        LOG(ERROR, "SUM not supported.\n");
+        close_session(dev);
+        return -1;
+    }
+
+    /*
+     LockingObjectUID.Erase [ ]
+     =>
+     [ ]
+     NOTE: this method works only on a SUM object and will set user PIN to "" !
+    */
+    prepare_method(command, &command_len, dev, locking_range_uid_str, METHOD_ERASE_UID);
+    finish_method(command, &command_len);
+
+    if ((err = invoke_method(dev, command, command_len, command, sizeof(command))))
+        LOG(ERROR, "Failed to erase locking range.\n");
+
     close_session(dev);
     return err;
 }

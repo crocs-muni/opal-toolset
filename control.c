@@ -84,6 +84,13 @@ static struct argp_option options_regenerate_key[] = {
     { 0 }
 };
 
+static struct argp_option options_erase_range[] = {
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of Admin1 authority", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of Admin1 authority", 0 },
+    { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "Locking range to re-generate", 0 },
+    { 0 }
+};
+
 static struct argp_option options_unlock[] = {
     { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of the authority", 0 },
     { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of the authority", 0 },
@@ -131,6 +138,7 @@ struct Arguments {
         CMD_LIST_RANGE,
         CMD_STACK_RESET,
         CMD_SETUP_RESET,
+        CMD_ERASE_RANGE,
     } command;
 
     char *device;
@@ -250,6 +258,8 @@ static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
                 arguments->command = CMD_SETUP_RESET;
             } else if (strcmp(arg, "regenerate_key") == 0) {
                 arguments->command = CMD_REGENERATE_KEY;
+            } else if (strcmp(arg, "erase_range") == 0) {
+                arguments->command = CMD_ERASE_RANGE;
             } else if (strcmp(arg, "list_range") == 0) {
                 arguments->command = CMD_LIST_RANGE;
             } else {
@@ -329,6 +339,7 @@ int main(int argc, char **argv)
     struct argp argp_setup_tper = { options_setup_tper, parse_opt_child, NULL, "setup_tper_doc", 0, 0, 0 };
     struct argp argp_psid_revert = { options_psid_revert, parse_opt_child, NULL, "psid_revert_doc", 0, 0, 0 };
     struct argp argp_regenerate_key = { options_regenerate_key, parse_opt_child, NULL, "regenerate_key_doc", 0, 0, 0 };
+    struct argp argp_erase_range = { options_erase_range, parse_opt_child, NULL, "erase_range_doc", 0, 0, 0 };
     struct argp argp_reset = { options_reset, parse_opt_child, NULL, "reset_doc", 0, 0, 0 };
     struct argp argp_stack_reset = { options_stack_reset, parse_opt_child, NULL, "stack_reset_doc", 0, 0, 0 };
     struct argp argp_setup_reset = { options_setup_reset, parse_opt_child, NULL, "setup_reset_doc", 0, 0, 0 };
@@ -340,6 +351,7 @@ int main(int argc, char **argv)
         { &argp_setup_tper, 0, "setup_tper - Take ownership over the device", 0 },
         { &argp_psid_revert, 0, "psid_revert - Revert the device to factory state", 0 },
         { &argp_regenerate_key, 0, "regenerate_key - Re-generate of a locking range", 0 },
+        { &argp_erase_range, 0, "erase_range - Erase a locking range (single user ext.)", 0 },
         { &argp_reset, 0, "reset - Send a programmatic reset", 0 },
         { &argp_stack_reset, 0, "stack_reset - Send a stack reset", 0 },
         { &argp_setup_reset, 0, "setup_reset - Setup programmiatic reset", 0 },
@@ -394,6 +406,9 @@ int main(int argc, char **argv)
     } else if (args.command == CMD_REGENERATE_KEY) {
         err = regenerate_range(&dev, args.locking_range,
                                args.verify_pin, args.verify_pin_len, args.user[0]);
+    } else if (args.command == CMD_ERASE_RANGE) {
+        err = erase_range(&dev, args.locking_range,
+                          args.verify_pin, args.verify_pin_len, ADMIN_BASE_ID + 1);
     } else if (args.command == CMD_LIST_RANGE) {
         err = list_range(&dev, args.locking_range,
                          args.verify_pin, args.verify_pin_len, args.user[0]);

@@ -26,6 +26,8 @@ int list_range(struct disk_device *dev, unsigned char locking_range,
 int regenerate_range(struct disk_device *dev, unsigned char locking_range,
                      unsigned char *challenge, size_t challenge_len, size_t user);
 
+int erase_range(struct disk_device *dev, unsigned char locking_range,
+                     unsigned char *challenge, size_t challenge_len, size_t user);
 
 int setup_user(struct disk_device *dev, size_t user_uid,
                unsigned char *admin_pin, size_t admin_pin_len,
