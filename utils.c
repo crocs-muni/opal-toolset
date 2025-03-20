@@ -548,6 +548,112 @@ int stack_reset(struct disk_device *dev)
 
     return 0;
 }
+
+int setup_reactivate(struct disk_device *dev, unsigned char locking_range,
+                     bool sum, bool sum_policy,
+                     const unsigned char *challenge, size_t challenge_len)
+{
+    int err = 0, max_lr = 0;
+    unsigned char uid[9] = { 0 }, param[3];
+    unsigned char buffer[512] = { 0 };
+    unsigned char response[512] = { 0 };
+    size_t i = 0;
+
+    if (challenge_len == 0 || !challenge || !*challenge) {
+        LOG(ERROR, "PIN not specified.\n");
+        return -1;
+    }
+
+    if ((err = start_session(dev, LOCKING_SP_UID, ADMIN_BASE_ID + 1, challenge, challenge_len))) {
+        LOG(ERROR, "Failed to start Admin SP session.\n");
+        return err;
+    }
+
+    // We have Discovery0 features now
+    if (!dev->features.single_user_mode.shared.feature_code) {
+        LOG(ERROR, "SUM not supported.\n");
+        close_session(dev);
+        return -1;
+    }
+
+    /*
+     SP.Reactivate [
+       SingleUserModeSelectionList = typeOr { EntireLockingTable : LockingTableUID,
+         SelectedLockingObjects : list [ LockingObjectUIDs ] },
+          RangeStartRangeLengthPolicy = enum{ 0 => User only, 1 => Admins only },
+          Admin1PIN = bytes
+      ]
+      =>
+      [ ]
+      NOTE: is sum is not set, sent empty parameters => restore SP to factory default
+    */
+
+    prepare_method(buffer, &i, dev, THISSP, METHOD_REACTIVATE_UID);
+
+    max_lr = be32_to_cpu(dev->features.single_user_mode.number_of_locking_objects_supported);
+
+    if (sum) {
+        start_name(buffer, &i);
+
+        memset(param, 0, sizeof(param));
+        hex_add(param, 3, METHOD_ACTIVATE_SUM_LIST_PARAM);
+        short_atom(buffer, &i, 0, 0, param, 3);
+
+        if (locking_range == ALL_LOCKING_RANGES) {
+            /* Whole table */
+            memcpy(uid, LOCKING_TABLE_UID, 8);
+            short_atom(buffer, &i, 1, 0, uid, 8);
+        } else if (locking_range >= max_lr) {
+            /* List of all supported LRs */
+            start_list(buffer, &i);
+            //memcpy(uid, LOCKING_RANGE_GLOBAL_UID, 8);
+            //short_atom(buffer, &i, 1, 0, uid, 8);
+            for (int j = 1; j < max_lr; j++) {
+                memcpy(uid, LOCKING_RANGE_NNNN_UID, 8);
+                hex_add(uid, 8, j);
+                short_atom(buffer, &i, 1, 0, uid, 8);
+            }
+                end_list(buffer, &i);
+        } else {
+            /* One specified LR */
+            start_list(buffer, &i);
+            if (locking_range == 0)
+                memcpy(uid, LOCKING_RANGE_GLOBAL_UID, 8);
+            else {
+                memcpy(uid, LOCKING_RANGE_NNNN_UID, 8);
+                hex_add(uid, 8, locking_range);
+            }
+            short_atom(buffer, &i, 1, 0, uid, 8);
+            end_list(buffer, &i);
+        }
+
+        end_name(buffer, &i);
+
+        /* RangeStartRangeLengthPolicy */
+        start_name(buffer, &i);
+        memset(param, 0, sizeof(param));
+        hex_add(param, 3, METHOD_ACTIVATE_SUM_POLICY_PARAM);
+        short_atom(buffer, &i, 0, 0, param, 3);
+
+        tiny_atom(buffer, &i, 0, sum_policy ? 1 : 0);
+
+        end_name(buffer, &i);
+    }
+
+    finish_method(buffer, &i);
+    if ((err = invoke_method(dev, buffer, i, response, sizeof(response)))) {
+        LOG(ERROR, "Failed to activate Locking SP.\n");
+        close_session(dev);
+        return err;
+    }
+
+    // The session is aborted automatically.
+    LOG(INFO, "------- ABORT SESSION -------\n\n");
+    wipe_session(dev);
+
+    return 0;
+}
+
 int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid_pwd_len,
                bool sum, unsigned char sum_locking_range, bool sum_policy)
 {
@@ -708,6 +814,7 @@ int psid_revert(struct disk_device *dev, const unsigned char *psid, size_t psid_
 
     // The session is aborted automatically.
     LOG(INFO, "------- ABORT SESSION -------\n\n");
+    wipe_session(dev);
 
     return err;
 }

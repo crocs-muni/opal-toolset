@@ -773,6 +773,12 @@ int start_session(struct disk_device *dev, const unsigned char *SPID, size_t use
     return err;
 }
 
+void wipe_session(struct disk_device *dev)
+{
+    dev->sp_session_id = 0;
+    dev->host_session_id = 0;
+}
+
 int close_session(struct disk_device *dev)
 {
     int err = 0;
@@ -793,8 +799,7 @@ int close_session(struct disk_device *dev)
             dev->host_session_id, dev->sp_session_id);
     }
 
-    dev->sp_session_id = 0;
-    dev->host_session_id = 0;
+    wipe_session(dev);
 
     LOG(INFO, "close_session err: %i\n", err);
     LOG(INFO, "------- CLOSE SESSION -------\n\n");

@@ -180,6 +180,7 @@ enum TrustedCommandDirection {
 #define METHOD_ACTIVATE_UID UCHR("\x00\x00\x00\x06\x00\x00\x02\x03")
 #define METHOD_ACTIVATE_SUM_LIST_PARAM   0x060000
 #define METHOD_ACTIVATE_SUM_POLICY_PARAM 0x060001
+#define METHOD_REACTIVATE_UID UCHR("\x00\x00\x00\x06\x00\x00\x08\x01")
 #define METHOD_RANDOM_UID UCHR("\x00\x00\x00\x06\x00\x00\x06\x01")
 #define METHOD_ERASE_UID UCHR("\x00\x00\x00\x06\x00\x00\x08\x03")
 
@@ -579,11 +580,12 @@ int trusted_command(struct disk_device *dev, uint8_t *msg, size_t msg_len,
                     enum TrustedCommandDirection direction, int protocol, int comID);
 
 /**
- * Methods to control a seesion.
+ * Methods to control a session.
 */
 int start_session(struct disk_device *dev, const unsigned char *SPID, size_t user_id, 
                   const unsigned char *challenge, size_t challenge_len);
 int close_session(struct disk_device *dev);
+void wipe_session(struct disk_device *dev);
 
 /**
  * Performs Level 0 Discovery process, storing found information in dev.

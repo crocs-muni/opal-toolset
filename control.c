@@ -102,6 +102,16 @@ static struct argp_option options_unlock[] = {
     { 0 }
 };
 
+static struct argp_option options_setup_reactivate[] = {
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of the authority", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of the authority", 0 },
+    { "admin", ARG_KEY_ADMIN, "id", 0, "Admin authority to authenticate as", 0 },
+    { "sum", ARG_KEY_SUM, NULL, 0, "Use Single User Mode (SUM)", 0 },
+    { "sum-policy", ARG_KEY_SUM_RANGE_ADMIN, NULL, 0, "Use SUM policy Admin only", 0 },
+    { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "SUM locking range (default is whole table)", 0 },
+    { 0 }
+};
+
 static struct argp_option options_reset[] = { 
     { "No options", 0, "NULL", OPTION_DOC},
     { 0 }
@@ -139,6 +149,7 @@ struct Arguments {
         CMD_STACK_RESET,
         CMD_SETUP_RESET,
         CMD_ERASE_RANGE,
+        CMD_SETUP_REACTIVATE,
     } command;
 
     char *device;
@@ -262,6 +273,8 @@ static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
                 arguments->command = CMD_ERASE_RANGE;
             } else if (strcmp(arg, "list_range") == 0) {
                 arguments->command = CMD_LIST_RANGE;
+            } else if (strcmp(arg, "setup_reactivate") == 0) {
+                arguments->command = CMD_SETUP_REACTIVATE;
             } else {
                 printf("Unexpected command.\n");
                 return ARGP_ERR_UNKNOWN;
@@ -343,6 +356,7 @@ int main(int argc, char **argv)
     struct argp argp_reset = { options_reset, parse_opt_child, NULL, "reset_doc", 0, 0, 0 };
     struct argp argp_stack_reset = { options_stack_reset, parse_opt_child, NULL, "stack_reset_doc", 0, 0, 0 };
     struct argp argp_setup_reset = { options_setup_reset, parse_opt_child, NULL, "setup_reset_doc", 0, 0, 0 };
+    struct argp argp_setup_reactivate = { options_setup_reactivate, parse_opt_child, NULL, "setup_reactivate_doc", 0, 0, 0 };
     struct argp_child argp_children[] = {
         { &argp_unlock, 0, "unlock - Lock or unlock a locking range", 0 },
         { &argp_setup_range, 0, "setup_range - Configure a locking range", 0 },
@@ -355,6 +369,7 @@ int main(int argc, char **argv)
         { &argp_reset, 0, "reset - Send a programmatic reset", 0 },
         { &argp_stack_reset, 0, "stack_reset - Send a stack reset", 0 },
         { &argp_setup_reset, 0, "setup_reset - Setup programmiatic reset", 0 },
+        { &argp_setup_reactivate, 0, "setup_reactivate - Reactivate locking ranges from/to SUM mode", 0 },
         { .argp = NULL }
     };
     struct argp argp_main = { options_main, parse_opt_main, "command device", MAIN_DOC_STRING, NULL, 0, 0 };
@@ -412,6 +427,10 @@ int main(int argc, char **argv)
     } else if (args.command == CMD_LIST_RANGE) {
         err = list_range(&dev, args.locking_range,
                          args.verify_pin, args.verify_pin_len, args.user[0]);
+    } else if (args.command == CMD_SETUP_REACTIVATE) {
+        err = setup_reactivate(&dev, args.locking_range,
+                               args.sum, args.sum_range_admin,
+                               args.verify_pin, args.verify_pin_len);
     } else {
         printf("Invalid command.\n");
 
