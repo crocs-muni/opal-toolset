@@ -14,8 +14,9 @@ enum log_level current_log_level = ERROR;
 void LOG_HEX(const void *ptr, unsigned len)
 {
     const char *buf = ptr;
+    int i;
 
-    for (int i = 0; i < len; i++) {
+    for (i = 0; i < len; i++) {
         if (i && !(i % 16))
             fprintf(stderr, "\n");
         fprintf(stderr, "%02x", (unsigned char)buf[i]);
@@ -26,9 +27,10 @@ void LOG_HEX(const void *ptr, unsigned len)
 int hex_add(unsigned char *a, size_t a_len, size_t b)
 {
     size_t i = 0;
-    int extra = 0;
+    int extra = 0, next_extra;
+
     while ((b > 0 || extra > 0) && i < a_len) {
-        int next_extra = (a[a_len - i - 1] + (b % 256) + extra) > 255;
+        next_extra = (a[a_len - i - 1] + (b % 256) + extra) > 255;
 
         a[a_len - i - 1] += (b % 256) + extra;
 
@@ -188,7 +190,7 @@ static int tcg_discovery_0_process_response(struct disk_device *dev, void *data)
 
 static void log_packet_data(const unsigned char *response, int comID)
 {
-    int l = 0;
+    int x, l = 0;
     const char *name;
     size_t length;
     bool session;
@@ -204,7 +206,7 @@ static void log_packet_data(const unsigned char *response, int comID)
         session = true;
     }
 
-    for (int x = 0; x < length; ++x) {
+    for (x = 0; x < length; ++x) {
         if (session && x == sizeof(struct packet_headers)) {
             LOG_C(EVERYTHING, "| ");
         }
@@ -288,7 +290,6 @@ static int scsi_send_cdb(int fd, uint8_t *cdb, size_t cdb_len,
                          enum TrustedCommandDirection direction, int comID)
 {
     int err = 0;
-
     uint8_t sense[32] = { 0 };
     struct sg_io_hdr sg = {
         .interface_id = 'S',
@@ -416,9 +417,11 @@ void end_session_token(unsigned char *buffer, size_t *i)
 
 void method_status_list(unsigned char *buffer, size_t *i)
 {
+    int x;
+
     buffer[*i] = START_LIST_TOKEN;
     *i += 1;
-    for (int x = 0; x < 3; ++x) {
+    for (x = 0; x < 3; ++x) {
         buffer[*i] = 0x00;
         *i += 1;
     }
@@ -454,6 +457,7 @@ void medium_atom(unsigned char *buffer, size_t *i, unsigned char B, unsigned cha
 uint64_t parse_int(const unsigned char *buffer, size_t *i)
 {
     uint64_t result = 0;
+    size_t len, j;
 
     if ((buffer[*i] & 0b10000000) == 0b00000000) {
         result = buffer[*i] & 0b00111111;
@@ -461,10 +465,10 @@ uint64_t parse_int(const unsigned char *buffer, size_t *i)
 
         return result;
     } else if ((buffer[*i] & 0b11000000) == 0b10000000) {
-        size_t len = buffer[*i] & (0b00011111);
+        len = buffer[*i] & (0b00011111);
         *i += 1;
 
-        for (size_t j = 0; j < len; ++j) {
+        for (j = 0; j < len; ++j) {
             result |= buffer[*i] << (((len - 1) - j) * 8);
             *i += 1;
         }
@@ -726,6 +730,7 @@ int start_session(struct disk_device *dev, const unsigned char *SPID, size_t use
                   size_t challenge_len)
 {
     int err = 0;
+    unsigned char signing_auth[8];
 
     LOG(INFO, "------- START SESSION -------\n");
 
@@ -735,9 +740,7 @@ int start_session(struct disk_device *dev, const unsigned char *SPID, size_t use
     do_level_0_discovery(dev);
     LOG(INFO, "base_com_id=%x user_id=%zu\n", dev->base_com_id, user_id);
 
-
     if (user_id < SPECIAL_BASE_ID) {
-        unsigned char signing_auth[8];
         memcpy(signing_auth, AUTHORITY_XXXX_UID, 8);
         hex_add(signing_auth, 8, user_id);
         generate_start_session_method(dev, buffer, &i, SPID, 8, 
@@ -792,7 +795,6 @@ void wipe_session(struct disk_device *dev)
 int close_session(struct disk_device *dev)
 {
     int err = 0;
-
     unsigned char buffer[512] = { 0 };
     size_t i = 0;
 
@@ -820,7 +822,7 @@ int close_session(struct disk_device *dev)
 int parse_bytes(const unsigned char *src, size_t *offset, unsigned char *dst, size_t dst_size, size_t *written)
 {
     size_t len = 0;
-    size_t i = 0;
+    size_t i = 0, j;
 
     if (offset) {
         i = *offset;
@@ -865,7 +867,7 @@ int parse_bytes(const unsigned char *src, size_t *offset, unsigned char *dst, si
             return 1;
         }
 
-        for (size_t j = 0; j < len; ++j) {
+        for (j = 0; j < len; ++j) {
             dst[j] = src[i + j];
         }
     }
@@ -921,8 +923,11 @@ int skip_atom(const unsigned char *src, size_t *offset, size_t total_length)
 int skip_to_parameter(unsigned char *src, size_t *offset, int parameter, int skip_mandatory)
 {
     struct packet_headers *headers = (struct packet_headers *)src;
-    size_t len = be32_to_cpu(headers->data_subpacket.length) + sizeof(struct packet_headers);
+    size_t tmp, len = be32_to_cpu(headers->data_subpacket.length) + sizeof(struct packet_headers);
     *offset = sizeof(struct packet_headers);
+    int j;
+    uint64_t parsed_index;
+
     if (src[*offset] == START_LIST_TOKEN) {
         *offset += 1;
     } else if (src[*offset] == CALL_TOKEN) {
@@ -939,7 +944,7 @@ int skip_to_parameter(unsigned char *src, size_t *offset, int parameter, int ski
         }
 
         // skip previous arguments
-        for (int j = 0; j < parameter - 1; ++j) {
+        for (j = 0; j < parameter - 1; ++j) {
             skip_atom(src, offset, len);
         }
 
@@ -948,7 +953,7 @@ int skip_to_parameter(unsigned char *src, size_t *offset, int parameter, int ski
         // getting optional argument
 
         // skip all mandatory arguments
-        for (int j = 0; j < skip_mandatory; ++j) {
+        for (j = 0; j < skip_mandatory; ++j) {
             skip_atom(src, offset, len);
         }
 
@@ -957,8 +962,8 @@ int skip_to_parameter(unsigned char *src, size_t *offset, int parameter, int ski
                 return 1;
             }
 
-            size_t tmp = *offset + 1;
-            uint64_t parsed_index = parse_int(src, &tmp);
+            tmp = *offset + 1;
+            parsed_index = parse_int(src, &tmp);
             if (parsed_index == (uint64_t)parameter) {
                 return 0;
             }
@@ -980,7 +985,6 @@ int set_row(struct disk_device *dev, const unsigned char *object_uid, unsigned c
     [ ]
      */
     int err = 0;
-
     unsigned char buffer[2048] = { 0 };
     size_t i = 0;
 
@@ -1019,9 +1023,8 @@ int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, unsi
     =>
     [ Result : typeOr { Bytes : bytes, RowValues : list [ ColumnNumber = Value ... ] } ]
     */
-    size_t i = 0;
+    size_t i = 0, pos;
     int err = 0;
-
     unsigned char buffer[2048] = { 0 };
 
     prepare_method(buffer, &i, dev, object_uid, METHOD_GET_UID);
@@ -1047,7 +1050,7 @@ int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, unsi
         return err;
     }
 
-    size_t pos = sizeof(struct packet_headers);
+    pos = sizeof(struct packet_headers);
     if (buffer[pos + 0] != START_LIST_TOKEN || buffer[pos + 1] != START_LIST_TOKEN ||
         buffer[pos + 2] != START_NAME_TOKEN) {
         LOG(ERROR, "Unexpected tokens received.\n");
@@ -1077,9 +1080,8 @@ int get_row_int(struct disk_device *dev, const unsigned char *object_uid, unsign
     [ Result : typeOr { Bytes : bytes, RowValues : list [ ColumnNumber = Value ... ] } ]
     */
     uint64_t tmp;
-    size_t i = 0;
+    size_t i = 0, pos;
     int err = 0;
-
     unsigned char buffer[2048] = { 0 };
 
     prepare_method(buffer, &i, dev, object_uid, METHOD_GET_UID);
@@ -1105,7 +1107,7 @@ int get_row_int(struct disk_device *dev, const unsigned char *object_uid, unsign
         return err;
     }
 
-    size_t pos = sizeof(struct packet_headers);
+    pos = sizeof(struct packet_headers);
     LOG(EVERYTHING, "Packet headers size: %zu.\n", pos);
 
     if (buffer[pos + 0] == START_LIST_TOKEN && buffer[pos + 1] == END_LIST_TOKEN) {

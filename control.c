@@ -196,7 +196,7 @@ static error_t parse_opt_pin(char *source, unsigned char *target, size_t *target
 
 static error_t parse_opt_hex(const char *source, unsigned char *target, size_t *target_len)
 {
-    size_t pin_len = strlen(source);
+    size_t i, pin_len = strlen(source);
 
     if (pin_len > 2 * PIN_MAX_LEN || pin_len % 2 != 0) {
         return 1;
@@ -205,7 +205,7 @@ static error_t parse_opt_hex(const char *source, unsigned char *target, size_t *
     pin_len /= 2;
     unsigned char c;
 
-    for (size_t i = 0; i < pin_len; i++) {
+    for (i = 0; i < pin_len; i++) {
         if (sscanf(source, "%2hhx", &c) != 1) {
             return 1;
         }
@@ -234,11 +234,12 @@ static error_t parse_opt_bool(const char *source, int8_t *target)
 static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
 {
     struct Arguments *arguments = state->input;
+    int i;
 
     switch (key) {
     case ARGP_KEY_INIT:
         // NOTE: 'state->root_argp->children[i].argp' does not seem to be correct.
-        for (int i = 0; i < 8; i++) {
+        for (i = 0; i < 8; i++) {
             state->child_inputs[i] = arguments;
         }
         break;
@@ -374,8 +375,10 @@ int main(int argc, char **argv)
     };
     struct argp argp_main = { options_main, parse_opt_main, "command device", MAIN_DOC_STRING, NULL, 0, 0 };
     argp_main.children = argp_children;
+    error_t err;
+    struct disk_device dev = { 0 };
 
-    error_t err = argp_parse(&argp_main, argc, argv, 0, 0, &args);
+    err = argp_parse(&argp_main, argc, argv, 0, 0, &args);
     if (err != 0) {
         printf("Could not parse the arguments.\n");
         return 1;
@@ -387,7 +390,6 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    struct disk_device dev = { 0 };
     if ((err = disk_device_open(&dev, args.device, args.use_scsi_sec))) {
         return err;
     }
@@ -433,7 +435,6 @@ int main(int argc, char **argv)
                                args.verify_pin, args.verify_pin_len);
     } else {
         printf("Invalid command.\n");
-
         err = 1;
     }
 
