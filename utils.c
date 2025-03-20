@@ -10,13 +10,8 @@ static int generate_locking_range_set_command(struct disk_device *dev, unsigned 
                                               char write_locked)
 {
     unsigned char locking_range_uid_str[9] = { 0 };
-    if (locking_range == 0) {
-        memcpy(locking_range_uid_str, LOCKING_RANGE_GLOBAL_UID, 8);
-    } else {
-        memcpy(locking_range_uid_str, LOCKING_RANGE_NNNN_UID, 8);
-        hex_add(locking_range_uid_str, 8, locking_range);
-    }
 
+    prepare_locking_range(locking_range_uid_str, locking_range);
     prepare_method(buffer, i, dev, locking_range_uid_str, METHOD_SET_UID);
     {
         start_name(buffer, i);
@@ -237,12 +232,7 @@ int list_range(struct disk_device *dev, unsigned char locking_range,
         return -1;
     }
 
-    if (locking_range == 0) {
-        memcpy(locking_range_uid_str, LOCKING_RANGE_GLOBAL_UID, 8);
-    } else {
-        memcpy(locking_range_uid_str, LOCKING_RANGE_NNNN_UID, 8);
-        hex_add(locking_range_uid_str, 8, locking_range);
-    }
+    prepare_locking_range(locking_range_uid_str, locking_range);
 
     // Get Locking Authority session
     if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
@@ -421,9 +411,8 @@ int setup_programmatic_reset(struct disk_device *dev, unsigned char locking_rang
             return err;
         }
 
-        unsigned char locking_range_uid[8];
-        memcpy(locking_range_uid, LOCKING_RANGE_NNNN_UID, 8);
-        hex_add(locking_range_uid, 8, locking_range);
+        unsigned char locking_range_uid_str[8];
+        prepare_locking_range(locking_range_uid_str, locking_range);
 
         unsigned char atom_resets[32] = { 0 };
         size_t atom_resets_len = 0;
@@ -432,7 +421,7 @@ int setup_programmatic_reset(struct disk_device *dev, unsigned char locking_rang
         tiny_atom(atom_resets, &atom_resets_len, 0, LOCKING_RANGE_COLUMN_LOCK_ON_RESET_PROGRAMMATIC);
         end_list(atom_resets, &atom_resets_len);
 
-        if ((err = set_row(dev, locking_range_uid, LOCKING_RANGE_COLUMN_LOCK_ON_RESET, 
+        if ((err = set_row(dev, locking_range_uid_str, LOCKING_RANGE_COLUMN_LOCK_ON_RESET,
                            atom_resets, atom_resets_len))) {
             LOG(ERROR, "Failed to set LockOnReset.\n");
             close_session(dev);
@@ -609,20 +598,14 @@ int setup_reactivate(struct disk_device *dev, unsigned char locking_range,
             //memcpy(uid, LOCKING_RANGE_GLOBAL_UID, 8);
             //short_atom(buffer, &i, 1, 0, uid, 8);
             for (int j = 1; j < max_lr; j++) {
-                memcpy(uid, LOCKING_RANGE_NNNN_UID, 8);
-                hex_add(uid, 8, j);
+                prepare_locking_range(uid, j);
                 short_atom(buffer, &i, 1, 0, uid, 8);
             }
                 end_list(buffer, &i);
         } else {
             /* One specified LR */
             start_list(buffer, &i);
-            if (locking_range == 0)
-                memcpy(uid, LOCKING_RANGE_GLOBAL_UID, 8);
-            else {
-                memcpy(uid, LOCKING_RANGE_NNNN_UID, 8);
-                hex_add(uid, 8, locking_range);
-            }
+            prepare_locking_range(uid, locking_range);
             short_atom(buffer, &i, 1, 0, uid, 8);
             end_list(buffer, &i);
         }
@@ -738,20 +721,14 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
             //memcpy(uid, LOCKING_RANGE_GLOBAL_UID, 8);
             //short_atom(buffer, &i, 1, 0, uid, 8);
             for (int j = 1; j < max_lr; j++) {
-                memcpy(uid, LOCKING_RANGE_NNNN_UID, 8);
-                hex_add(uid, 8, j);
+                prepare_locking_range(uid, j);
                 short_atom(buffer, &i, 1, 0, uid, 8);
             }
             end_list(buffer, &i);
         } else {
             /* One specified LR */
             start_list(buffer, &i);
-            if (sum_locking_range == 0)
-                memcpy(uid, LOCKING_RANGE_GLOBAL_UID, 8);
-            else {
-                memcpy(uid, LOCKING_RANGE_NNNN_UID, 8);
-                hex_add(uid, 8, sum_locking_range);
-            }
+            prepare_locking_range(uid, sum_locking_range);
             short_atom(buffer, &i, 1, 0, uid, 8);
             end_list(buffer, &i);
         }
@@ -941,12 +918,7 @@ int regenerate_range(struct disk_device *dev, unsigned char locking_range,
         return -1;
     }
 
-    if (locking_range == 0) {
-        memcpy(locking_range_uid_str, LOCKING_RANGE_GLOBAL_UID, 8);
-    } else {
-        memcpy(locking_range_uid_str, LOCKING_RANGE_NNNN_UID, 8);
-        hex_add(locking_range_uid_str, 8, locking_range);
-    }
+    prepare_locking_range(locking_range_uid_str, locking_range);
 
     if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
         LOG(ERROR, "Failed to initialise session.\n");
@@ -997,12 +969,7 @@ int erase_range(struct disk_device *dev, unsigned char locking_range,
         return -1;
     }
 
-    if (locking_range == 0) {
-        memcpy(locking_range_uid_str, LOCKING_RANGE_GLOBAL_UID, 8);
-    } else {
-        memcpy(locking_range_uid_str, LOCKING_RANGE_NNNN_UID, 8);
-        hex_add(locking_range_uid_str, 8, locking_range);
-    }
+    prepare_locking_range(locking_range_uid_str, locking_range);
 
     if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
         LOG(ERROR, "Failed to initialise session.\n");

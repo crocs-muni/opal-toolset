@@ -642,6 +642,16 @@ void finish_method(unsigned char *buffer, size_t *i)
     finish_headers(buffer, i);
 }
 
+void prepare_locking_range(unsigned char *buffer, size_t locking_range)
+{
+    if (locking_range == 0)
+        memcpy(buffer, LOCKING_RANGE_GLOBAL_UID, 8);
+    else {
+        memcpy(buffer, LOCKING_RANGE_NNNN_UID, 8);
+        hex_add(buffer, 8, locking_range);
+    }
+}
+
 int do_level_0_discovery(struct disk_device *dev)
 {
     int err = 0;

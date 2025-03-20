@@ -551,6 +551,7 @@ void short_atom(unsigned char *buffer, size_t *offset,
 void medium_atom(unsigned char *buffer, size_t *offset,
                 unsigned char is_bytes, unsigned char is_signed,
                 const uint8_t *value, size_t value_len);
+void prepare_locking_range(unsigned char *buffer, size_t locking_range);
 
 /**
  * Methods to construct headers of Opal packets.
