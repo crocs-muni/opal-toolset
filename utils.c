@@ -531,12 +531,43 @@ int stack_reset(struct disk_device *dev)
     return 0;
 }
 
+static void generate_activate_ranges(struct disk_device *dev, unsigned char *buffer, size_t *i,
+                                    unsigned char locking_range)
+{
+    unsigned char uid[9] = { 0 };
+    size_t j, max_lr;
+
+    max_lr = be32_to_cpu(dev->features.single_user_mode.number_of_locking_objects_supported);
+
+    if (locking_range == ALL_LOCKING_RANGES) {
+        LOG(INFO, "Activate LOCKING_TABLE\n");
+        memcpy(uid, LOCKING_TABLE_UID, 8);
+        short_atom(buffer, i, 1, 0, uid, 8);
+    } else if (locking_range >= max_lr) {
+        LOG(INFO, "Activate LRs list 1..%zu\n", max_lr);
+        start_list(buffer, i);
+        //memcpy(uid, LOCKING_RANGE_GLOBAL_UID, 8);
+        //short_atom(buffer, &i, 1, 0, uid, 8);
+        for (j = 1; j < max_lr; j++) {
+            prepare_locking_range(uid, j);
+            short_atom(buffer, i, 1, 0, uid, 8);
+        }
+        end_list(buffer, i);
+    } else {
+        LOG(INFO, "Activate LR %d\n", locking_range);
+        start_list(buffer, i);
+        prepare_locking_range(uid, locking_range);
+        short_atom(buffer, i, 1, 0, uid, 8);
+        end_list(buffer, i);
+    }
+}
+
 int setup_reactivate(struct disk_device *dev, unsigned char locking_range,
                      bool sum, bool sum_policy,
                      const unsigned char *challenge, size_t challenge_len)
 {
-    int err = 0, max_lr = 0;
-    unsigned char uid[9] = { 0 }, param[3];
+    int err = 0;
+    unsigned char param[3];
     unsigned char buffer[512] = { 0 };
     unsigned char response[512] = { 0 };
     size_t i = 0;
@@ -572,8 +603,6 @@ int setup_reactivate(struct disk_device *dev, unsigned char locking_range,
 
     prepare_method(buffer, &i, dev, THISSP, METHOD_REACTIVATE_UID);
 
-    max_lr = be32_to_cpu(dev->features.single_user_mode.number_of_locking_objects_supported);
-
     if (sum) {
         start_name(buffer, &i);
 
@@ -581,27 +610,7 @@ int setup_reactivate(struct disk_device *dev, unsigned char locking_range,
         hex_add(param, 3, METHOD_ACTIVATE_SUM_LIST_PARAM);
         short_atom(buffer, &i, 0, 0, param, 3);
 
-        if (locking_range == ALL_LOCKING_RANGES) {
-            /* Whole table */
-            memcpy(uid, LOCKING_TABLE_UID, 8);
-            short_atom(buffer, &i, 1, 0, uid, 8);
-        } else if (locking_range >= max_lr) {
-            /* List of all supported LRs */
-            start_list(buffer, &i);
-            //memcpy(uid, LOCKING_RANGE_GLOBAL_UID, 8);
-            //short_atom(buffer, &i, 1, 0, uid, 8);
-            for (int j = 1; j < max_lr; j++) {
-                prepare_locking_range(uid, j);
-                short_atom(buffer, &i, 1, 0, uid, 8);
-            }
-                end_list(buffer, &i);
-        } else {
-            /* One specified LR */
-            start_list(buffer, &i);
-            prepare_locking_range(uid, locking_range);
-            short_atom(buffer, &i, 1, 0, uid, 8);
-            end_list(buffer, &i);
-        }
+        generate_activate_ranges(dev, buffer, &i, locking_range);
 
         end_name(buffer, &i);
 
@@ -633,8 +642,8 @@ int setup_reactivate(struct disk_device *dev, unsigned char locking_range,
 int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid_pwd_len,
                bool sum, unsigned char sum_locking_range, bool sum_policy)
 {
-    int err = 0, max_lr = 0;
-    unsigned char msid[2048] = { 0 }, uid[9] = { 0 }, param[3];
+    int err = 0;
+    unsigned char msid[2048] = { 0 }, param[3];
     unsigned char atom[1024] = { 0 };
     unsigned char buffer[512] = { 0 };
     unsigned char response[512] = { 0 };
@@ -697,35 +706,13 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
     prepare_method(buffer, &i, dev, LOCKING_SP_UID, METHOD_ACTIVATE_UID);
 
     if (sum) {
-        max_lr = be32_to_cpu(dev->features.single_user_mode.number_of_locking_objects_supported);
-
         start_name(buffer, &i);
 
         memset(param, 0, sizeof(param));
         hex_add(param, 3, METHOD_ACTIVATE_SUM_LIST_PARAM);
         short_atom(buffer, &i, 0, 0, param, 3);
 
-        if (sum_locking_range == ALL_LOCKING_RANGES) {
-            /* Whole table */
-            memcpy(uid, LOCKING_TABLE_UID, 8);
-            short_atom(buffer, &i, 1, 0, uid, 8);
-        } else if (sum_locking_range >= max_lr) {
-            /* List of all supported LRs */
-            start_list(buffer, &i);
-            //memcpy(uid, LOCKING_RANGE_GLOBAL_UID, 8);
-            //short_atom(buffer, &i, 1, 0, uid, 8);
-            for (int j = 1; j < max_lr; j++) {
-                prepare_locking_range(uid, j);
-                short_atom(buffer, &i, 1, 0, uid, 8);
-            }
-            end_list(buffer, &i);
-        } else {
-            /* One specified LR */
-            start_list(buffer, &i);
-            prepare_locking_range(uid, sum_locking_range);
-            short_atom(buffer, &i, 1, 0, uid, 8);
-            end_list(buffer, &i);
-        }
+        generate_activate_ranges(dev, buffer, &i, sum_locking_range);
 
         end_name(buffer, &i);
 
