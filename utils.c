@@ -103,8 +103,42 @@ int unlock_range(struct disk_device *dev, unsigned char locking_range,
         return err;
     }
 
-    err = close_session(dev);
-    return err;
+    return close_session(dev);
+}
+
+int setup_enable_range(struct disk_device *dev, unsigned char locking_range,
+                 char read_lock_enabled, char write_lock_enabled,
+                 unsigned char *challenge, size_t challenge_len, size_t user)
+
+{
+    int err = 0;
+    unsigned char buffer[2048] = { 0 };
+    size_t i = 0;
+    unsigned char response[2048] = { 0 };
+
+    if (locking_range == ALL_LOCKING_RANGES) {
+        LOG(ERROR, "LR must be specified.\n");
+        return -1;
+    }
+
+    if (read_lock_enabled < 0 && write_lock_enabled < 0) {
+        LOG(ERROR, "At least one enable/disable locking value must be set.\n");
+        return -1;
+    }
+
+    if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
+        LOG(ERROR, "Failed when setting starting session for setting locking range parameters.\n");
+        return err;
+    }
+    generate_locking_range_set_command(dev, buffer, &i, locking_range, UINT64_MAX, UINT64_MAX,
+                                       read_lock_enabled, write_lock_enabled, -1, -1);
+    if ((err = invoke_method(dev, buffer, i, response, sizeof(response)))) {
+        LOG(ERROR, "Failed when setting locking range parameters.\n");
+        close_session(dev);
+        return err;
+    }
+
+    return close_session(dev);
 }
 
 int setup_range(struct disk_device *dev, unsigned char locking_range,

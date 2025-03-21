@@ -42,5 +42,26 @@ echo "LOCK LR"
 $CONTROL unlock $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER --read-locked=1 --write-locked=1
 $CONTROL list_range $DEV --locking-range $LR --user $USER --verify-pin $PIN_USER
 
+echo "Disable LR locking"
+$CONTROL setup_enable_range $DEV --locking-range $LR --read-lock-enabled=0 --write-lock-enabled=0 --user $USER --verify-pin $PIN_USER
+echo "Reactivate - disable SUM"
+$CONTROL setup_reactivate $DEV --locking-range $LR --verify-pin $PIN_ADMIN
+echo "Enable locking"
+$CONTROL setup_enable_range $DEV --locking-range $LR --read-lock-enabled=1 --write-lock-enabled=1 --admin 1 --verify-pin $PIN_ADMIN
+echo "Unlock/Lock by ADMIN1"
+$CONTROL unlock $DEV --locking-range $LR --admin 1 --verify-pin $PIN_ADMIN --read-locked=0 --write-locked=0
+$CONTROL list_range $DEV --locking-range $LR --admin 1 --verify-pin $PIN_ADMIN
+$CONTROL unlock $DEV --locking-range $LR --admin 1 --verify-pin $PIN_ADMIN --read-locked=1 --write-locked=1
+$CONTROL list_range $DEV --locking-range $LR --admin 1 --verify-pin $PIN_ADMIN
+
+echo "Reactivate - enable SUM"
+$CONTROL setup_enable_range $DEV --locking-range $LR --read-lock-enabled=0 --write-lock-enabled=0 --admin 1 --verify-pin $PIN_ADMIN
+$CONTROL setup_reactivate $DEV --locking-range $LR --verify-pin $PIN_ADMIN --sum
+# Reactivate will set user password to ""
+$CONTROL setup_enable_range $DEV --locking-range $LR --read-lock-enabled=1 --write-lock-enabled=1 --user $USER --verify-pin ""
+$CONTROL list_range $DEV --locking-range $LR --user $USER --verify-pin ""
+
+# TODO add user password set
+
 echo "PSID REVERT"
 $CONTROL psid_revert $DEV --verify-pin=$DEV_PSID
