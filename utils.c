@@ -156,7 +156,7 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
     size_t boolean_ace_len = 0;
 
 
-    if (challenge_len == 0 || !challenge) {
+    if (!challenge) {
         LOG(ERROR, "PIN not specified.\n");
         return -1;
     }
@@ -192,9 +192,8 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
         return close_session(dev);
 
     // Create ACE with all the users.
-    if (users_len == 0) {
+    if (users_len == 0)
         LOG(ERROR, "Empty authority list may cause INVALID_PARAMETER error.\n");
-    }
 
     start_list(boolean_ace, &boolean_ace_len);
     for (i = 0; i < users_len; ++i) {
@@ -331,12 +330,12 @@ int setup_user(struct disk_device *dev, size_t user_uid,
     size_t atom_pin_len = 0;
     size_t atom_true_len = 0;
 
-    if (admin_pin_len == 0 || !admin_pin) {
+    if (!admin_pin) {
         LOG(ERROR, "Admin PIN not specified.\n");
         return -1;
     }
 
-    if (user_pin_len == 0 || !user_pin) {
+    if (!user_pin) {
         LOG(ERROR, "User PIN not specified.\n");
         return -1;
     }
@@ -402,6 +401,44 @@ int setup_user(struct disk_device *dev, size_t user_uid,
     return close_session(dev);
 }
 
+int setup_password(struct disk_device *dev, size_t users[], size_t users_len,
+                   unsigned char *user0_pin, size_t user0_pin_len,
+                   unsigned char *user1_pin, size_t user1_pin_len)
+{
+    int err = 0;
+    unsigned char c_pin_str[9] = { 0 };
+    unsigned char atom_pin[256] = { 0 };
+    size_t atom_pin_len = 0;
+
+    if (!users || users_len != 2) {
+        LOG(ERROR, "Users not not specified.\n");
+        return -1;
+    }
+
+    if (!user0_pin || !user1_pin) {
+        LOG(ERROR, "User PIN not specified.\n");
+        return -1;
+    }
+
+    if ((err = start_session(dev, LOCKING_SP_UID, users[0], user0_pin, user0_pin_len))) {
+        LOG(ERROR, "Failed to start session with Locking SP.\n");
+        return err;
+    }
+
+    memcpy(c_pin_str, TABLE_C_PIN_UID, 8);
+    hex_add(c_pin_str, 8, users[1]);
+
+    medium_atom(atom_pin, &atom_pin_len, 1, 0, user1_pin, user1_pin_len);
+
+    if ((err = set_row(dev, c_pin_str, TABLE_C_PIN_COLUMN_PIN, atom_pin, atom_pin_len))) {
+        LOG(ERROR, "Failed to set pin of the authority.\n");
+        close_session(dev);
+        return err;
+    }
+
+    return close_session(dev);
+}
+
 int setup_programmatic_reset(struct disk_device *dev, unsigned char locking_range,
                unsigned char *challenge, size_t challenge_len, size_t user)
 {
@@ -412,7 +449,7 @@ int setup_programmatic_reset(struct disk_device *dev, unsigned char locking_rang
     size_t atom_resets_len = 0;
     size_t atom_true_len = 0;
 
-    if (challenge_len == 0 || !challenge) {
+    if (!challenge) {
         LOG(ERROR, "PIN not specified.\n");
         return -1;
     }
@@ -606,7 +643,7 @@ int setup_reactivate(struct disk_device *dev, unsigned char locking_range,
     unsigned char response[512] = { 0 };
     size_t i = 0;
 
-    if (challenge_len == 0 || !challenge || !*challenge) {
+    if (!challenge) {
         LOG(ERROR, "PIN not specified.\n");
         return -1;
     }
@@ -685,7 +722,7 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
     size_t msid_len = 0;
     size_t i = 0;
 
-    if (sid_pwd_len == 0 || !sid_pwd) {
+    if (!sid_pwd) {
         LOG(ERROR, "PIN not specified.\n");
         return -1;
     }
@@ -781,7 +818,7 @@ int psid_revert(struct disk_device *dev, const unsigned char *psid, size_t psid_
 
     LOG(INFO, "PSID revert\n");
 
-    if (psid_len == 0 || !psid) {
+    if (!psid) {
         LOG(ERROR, "PSID not specified.\n");
         return -1;
     }

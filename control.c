@@ -60,6 +60,16 @@ static struct argp_option options_setup_user[] = {
     { 0 }
 };
 
+static struct argp_option options_setup_password[] = {
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of the authority (first user or admin option)", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of the authority (first user or admin option)", 0 },
+    { "assign-pin", ARG_KEY_ASSIGN_PIN, "pin", 0, "Password to set (second user or admin option)", 0 },
+    { "assign-pin-hex", ARG_KEY_ASSIGN_PIN_HEX, "hex_pin", 0, "Password to ser (second user or admin option)", 0 },
+    { "user", ARG_KEY_USER, "id", 0, "ID of the user authority", 0 },
+    { "admin", ARG_KEY_ADMIN, "id", 0, "ID of the admin authority", 0 },
+    { 0 }
+};
+
 static struct argp_option options_setup_tper[] = { 
     { "assign-pin", ARG_KEY_ASSIGN_PIN, "pin", 0, "Password to assign to the owner authority", 0 },
     { "assign-pin-hex", ARG_KEY_ASSIGN_PIN_HEX, "hex_pin", 0, "Password to assign to the owner authority", 0 },
@@ -162,6 +172,7 @@ struct Arguments {
         CMD_ERASE_RANGE,
         CMD_SETUP_REACTIVATE,
         CMD_SETUP_ENABLE_RANGE,
+        CMD_SETUP_PASSWORD,
     } command;
 
     char *device;
@@ -248,7 +259,7 @@ static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
     case ARGP_KEY_INIT:
         // NOTE: 'state->root_argp->children[i].argp' does not seem to be correct.
         // FIXME: WTF?
-        for (i = 0; i < 14; i++)
+        for (i = 0; i < 15; i++)
             state->child_inputs[i] = arguments;
         break;
     case ARG_KEY_VERBOSE:
@@ -286,6 +297,8 @@ static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
                 arguments->command = CMD_SETUP_REACTIVATE;
             else if (strcmp(arg, "setup_enable_range") == 0)
                 arguments->command = CMD_SETUP_ENABLE_RANGE;
+            else if (strcmp(arg, "setup_password") == 0)
+                arguments->command = CMD_SETUP_PASSWORD;
             else {
                 printf("Unexpected command.\n");
                 return ARGP_ERR_UNKNOWN;
@@ -369,6 +382,7 @@ int main(int argc, char **argv)
     struct argp argp_setup_reset = { options_setup_reset, parse_opt_child, NULL, "setup_reset_doc", 0, 0, 0 };
     struct argp argp_setup_reactivate = { options_setup_reactivate, parse_opt_child, NULL, "setup_reactivate_doc", 0, 0, 0 };
     struct argp argp_setup_enable_range = { options_setup_enable_range, parse_opt_child, NULL, "setup_enable_range", 0, 0, 0 };
+    struct argp argp_setup_password = { options_setup_password, parse_opt_child, NULL, "setup_password", 0, 0, 0 };
     struct argp_child argp_children[] = {
         { &argp_unlock, 0, "unlock - Lock or unlock a locking range", 0 },
         { &argp_setup_range, 0, "setup_range - Configure a locking range", 0 },
@@ -383,6 +397,7 @@ int main(int argc, char **argv)
         { &argp_setup_reset, 0, "setup_reset - Setup programmatic reset", 0 },
         { &argp_setup_reactivate, 0, "setup_reactivate - Reactivate locking ranges from/to SUM mode", 0 },
         { &argp_setup_enable_range, 0, "setup_enable_range - Setup locking for locking range", 0 },
+        { &argp_setup_password, 0, "setup_password - Setup password", 0 },
         { .argp = NULL }
     };
     struct argp argp_main = { options_main, parse_opt_main, "command device", MAIN_DOC_STRING, NULL, 0, 0 };
@@ -410,15 +425,19 @@ int main(int argc, char **argv)
                            args.read_locked, args.write_locked,
                            args.verify_pin, args.verify_pin_len, args.user[0]);
     else if (args.command == CMD_SETUP_RANGE)
-        err = setup_range(&dev, args.locking_range, 
+        err = setup_range(&dev, args.locking_range,
                           args.verify_pin, args.verify_pin_len, 
                           args.locking_range_start, args.locking_range_length, 
                           args.user, args.user_count, args.sum);
     else if (args.command == CMD_SETUP_USER)
-        err = setup_user(&dev, args.user[0], 
+        err = setup_user(&dev, args.user[0],
                          args.verify_pin, args.verify_pin_len,
                          args.assign_pin, args.assign_pin_len,
                          args.sum, args.locking_range);
+    else if (args.command == CMD_SETUP_PASSWORD)
+        err = setup_password(&dev, args.user, args.user_count,
+                         args.verify_pin, args.verify_pin_len,
+                         args.assign_pin, args.assign_pin_len);
     else if (args.command == CMD_SETUP_TPER)
         err = setup_tper(&dev, args.assign_pin, args.assign_pin_len,
                          args.sum, args.locking_range, args.sum_range_admin);
