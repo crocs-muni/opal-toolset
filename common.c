@@ -1113,10 +1113,30 @@ int disk_device_open(struct disk_device *dev, const char *file, bool use_scsi_se
 {
     int fd = -1;
     struct stat st;
+    char link[PATH_MAX];
+    const char *name;
 
     memset(dev, 0, sizeof(struct disk_device));
+    memset(link, 0, sizeof(link));
 
-    if (!strncmp(file, "/dev/nvme", 9))
+    if (lstat(file, &st) == -1) {
+        LOG(ERROR, "Cannot stat '%s': %s\n", file, strerror(errno));
+        return 1;
+    }
+
+    if (S_ISLNK(st.st_mode) && readlink(file, link, sizeof(link) - 1) == -1) {
+        LOG(ERROR, "Cannot read symlink.\n");
+        return 1;
+    }
+
+    name = strrchr(S_ISLNK(st.st_mode) ? link : file, '/');
+    if (name)
+        name++;
+    else
+        name = file;
+
+    /* FIXME: this should check /sys transport "nvme" instead */
+    if (!strncmp(name, "nvme", 4))
         dev->type = NVME;
     else if (use_scsi_sec)
         dev->type = SCSI;
@@ -1141,10 +1161,7 @@ int disk_device_open(struct disk_device *dev, const char *file, bool use_scsi_se
 
     if (dev->name)
         free(dev->name);
-    if (!strncmp(file, "/dev/", 5))
-        dev->name = strdup(&file[5]);
-    else
-        dev->name = strdup(file);
+    dev->name = strdup(name);
 
     return 0;
 }
