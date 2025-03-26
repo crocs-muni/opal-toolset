@@ -10,7 +10,7 @@ static int generate_locking_range_set_command(struct disk_device *dev, unsigned 
                                               char write_locked)
 {
     unsigned char locking_range_uid_str[9] = { 0 };
-    unsigned char tmp[] = "\x00\x00\x00\x00\x00\x00\x00\x00";
+    unsigned char tmp[8];
 
     prepare_locking_range(locking_range_uid_str, locking_range);
     prepare_method(buffer, i, dev, locking_range_uid_str, METHOD_SET_UID);
@@ -20,6 +20,7 @@ static int generate_locking_range_set_command(struct disk_device *dev, unsigned 
         start_list(buffer, i);
         {
             if (range_start != UINT64_MAX) {
+                memset(tmp, 0, sizeof(tmp));
                 hex_add(tmp, 8, range_start);
                 LOG(INFO, "range_start = %" PRIu64 " (%02x%02x%02x%02x%02x%02x%02x%02x)\n", range_start, tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], tmp[5], tmp[6], tmp[7]);
 
@@ -29,6 +30,7 @@ static int generate_locking_range_set_command(struct disk_device *dev, unsigned 
                 end_name(buffer, i);
             }
             if (range_length != UINT64_MAX) {
+                memset(tmp, 0, sizeof(tmp));
                 hex_add(tmp, 8, range_length);
                 LOG(INFO, "range_length = %" PRIu64 " (%02x%02x%02x%02x%02x%02x%02x%02x)\n", range_length, tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], tmp[5], tmp[6], tmp[7]);
 
