@@ -38,6 +38,10 @@ int setup_user(struct disk_device *dev, size_t user_uid,
                unsigned char *user_pin, size_t user_pin_len,
                bool sum, unsigned char sum_locking_range);
 
+int add_user_range(struct disk_device *dev, unsigned char locking_range,
+                unsigned char *challenge, size_t challenge_len,
+                size_t users[], size_t users_len);
+
 int setup_password(struct disk_device *dev, size_t users[], size_t users_len,
                    unsigned char *user0_pin, size_t user0_pin_len,
                    unsigned char *user1_pin, size_t user1_pin_len);

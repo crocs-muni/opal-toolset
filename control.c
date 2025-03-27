@@ -40,6 +40,16 @@ static struct argp_option options_setup_range[] = {
     { 0 }
 };
 
+static struct argp_option options_add_user_range[] = {
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of Admin1 authority", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of Admin1 authority", 0 },
+    { "user", ARG_KEY_USER, "id", 0, "User to have control over the locking range (can be repeated)", 0 },
+    { "locking-range", ARG_KEY_LOCKING_RANGE, "id", 0, "Locking range to change", 0 },
+    { "locking-range-start", ARG_KEY_LOCKING_RANGE_START, "position", 0, NULL, 0 },
+    { "locking-range-length", ARG_KEY_LOCKING_RANGE_LENGTH, "length", 0, NULL, 0 },
+    { 0 }
+};
+
 static struct argp_option options_list_range[] = {
     { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of user authority", 0 },
     { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of user authority", 0 },
@@ -173,6 +183,7 @@ struct Arguments {
         CMD_SETUP_REACTIVATE,
         CMD_SETUP_ENABLE_RANGE,
         CMD_SETUP_PASSWORD,
+        CMD_ADD_USER_RANGE,
     } command;
 
     char *device;
@@ -299,6 +310,8 @@ static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
                 arguments->command = CMD_SETUP_ENABLE_RANGE;
             else if (strcmp(arg, "setup_password") == 0)
                 arguments->command = CMD_SETUP_PASSWORD;
+            else if (strcmp(arg, "add_user_range") == 0)
+                arguments->command = CMD_ADD_USER_RANGE;
             else {
                 printf("Unexpected command.\n");
                 return ARGP_ERR_UNKNOWN;
@@ -383,6 +396,7 @@ int main(int argc, char **argv)
     struct argp argp_setup_reactivate = { options_setup_reactivate, parse_opt_child, NULL, "setup_reactivate_doc", 0, 0, 0 };
     struct argp argp_setup_enable_range = { options_setup_enable_range, parse_opt_child, NULL, "setup_enable_range", 0, 0, 0 };
     struct argp argp_setup_password = { options_setup_password, parse_opt_child, NULL, "setup_password", 0, 0, 0 };
+    struct argp argp_add_user_range = { options_add_user_range, parse_opt_child, NULL, "add_user_range", 0, 0, 0 };
     struct argp_child argp_children[] = {
         { &argp_unlock, 0, "unlock - Lock or unlock a locking range", 0 },
         { &argp_setup_range, 0, "setup_range - Configure a locking range", 0 },
@@ -398,6 +412,7 @@ int main(int argc, char **argv)
         { &argp_setup_reactivate, 0, "setup_reactivate - Reactivate locking ranges from/to SUM mode", 0 },
         { &argp_setup_enable_range, 0, "setup_enable_range - Setup locking for locking range", 0 },
         { &argp_setup_password, 0, "setup_password - Setup password", 0 },
+        { &argp_add_user_range, 0, "add_user_range - Add user list + Admin1 to LR access", 0 },
         { .argp = NULL }
     };
     struct argp argp_main = { options_main, parse_opt_main, "command device", MAIN_DOC_STRING, NULL, 0, 0 };
@@ -426,9 +441,13 @@ int main(int argc, char **argv)
                            args.verify_pin, args.verify_pin_len, args.user[0]);
     else if (args.command == CMD_SETUP_RANGE)
         err = setup_range(&dev, args.locking_range,
-                          args.verify_pin, args.verify_pin_len, 
-                          args.locking_range_start, args.locking_range_length, 
+                          args.verify_pin, args.verify_pin_len,
+                          args.locking_range_start, args.locking_range_length,
                           args.user, args.user_count, args.sum);
+    else if (args.command == CMD_ADD_USER_RANGE)
+        err = add_user_range(&dev, args.locking_range,
+                          args.verify_pin, args.verify_pin_len,
+                          args.user, args.user_count);
     else if (args.command == CMD_SETUP_USER)
         err = setup_user(&dev, args.user[0],
                          args.verify_pin, args.verify_pin_len,

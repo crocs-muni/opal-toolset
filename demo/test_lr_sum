@@ -47,6 +47,8 @@ $CONTROL setup_enable_range $DEV --locking-range $LR --read-lock-enabled=0 --wri
 echo "Reactivate - disable SUM"
 $CONTROL setup_reactivate $DEV --locking-range $LR --verify-pin $PIN_ADMIN
 echo "Enable locking"
+# add access to admin + user as some drives do not rest it after reactivate
+$CONTROL add_user_range $DEV --locking-range $LR --admin 1 --user $USER --verify-pin $PIN_ADMIN
 $CONTROL setup_enable_range $DEV --locking-range $LR --read-lock-enabled=1 --write-lock-enabled=1 --admin 1 --verify-pin $PIN_ADMIN
 echo "Unlock/Lock by ADMIN1"
 $CONTROL unlock $DEV --locking-range $LR --admin 1 --verify-pin $PIN_ADMIN --read-locked=0 --write-locked=0

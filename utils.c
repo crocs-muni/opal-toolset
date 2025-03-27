@@ -143,6 +143,77 @@ int setup_enable_range(struct disk_device *dev, unsigned char locking_range,
     return close_session(dev);
 }
 
+static void add_user(unsigned char *buffer, size_t *i, size_t user, bool add_or)
+{
+   unsigned char user_uid[8];
+
+   memcpy(user_uid, AUTHORITY_XXXX_UID, 8);
+   hex_add(user_uid, 8, user);
+
+   start_name(buffer, i);
+   short_atom(buffer, i, 1, 0, HALF_UID_AUTHORITY_OBJECT_REF, 4);
+   short_atom(buffer, i, 1, 0, user_uid, 8);
+   end_name(buffer, i);
+
+    if (add_or) {
+        start_name(buffer, i);
+        short_atom(buffer, i, 1, 0, HALF_UID_BOOLEAN_ACE, 4);
+        tiny_atom(buffer, i, 0, BOOLEAN_OR);
+        end_name(buffer, i);
+    }
+}
+
+int add_user_range(struct disk_device *dev, unsigned char locking_range,
+                unsigned char *challenge, size_t challenge_len,
+                size_t users[], size_t users_len)
+{
+    int i, err = 0;
+    unsigned char boolean_ace[1024] = { 0 };
+    unsigned char ace_uid[8];
+    size_t boolean_ace_len = 0;
+
+    if (!challenge) {
+        LOG(ERROR, "PIN not specified.\n");
+        return -1;
+    }
+
+    if (!users || users_len == 0) {
+        LOG(ERROR, "Users must be specified.\n");
+        return -1;
+    }
+
+    err = start_session(dev, LOCKING_SP_UID, ADMIN_BASE_ID + 1, challenge, challenge_len);
+    if (err) {
+        LOG(ERROR, "Failed starting session for adding users.\n");
+        return err;
+    }
+
+    // Create ACE with all the users
+    start_list(boolean_ace, &boolean_ace_len);
+    for (i = 0; i < users_len; ++i)
+        add_user(boolean_ace, &boolean_ace_len, users[i], i != 0);
+    end_list(boolean_ace, &boolean_ace_len);
+
+    for (i = 0; i < 3; ++i) {
+        if (i == 0)
+            memcpy(ace_uid, TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_RD_LOCKED, 8);
+        else if (i == 1)
+            memcpy(ace_uid, TABLE_ACE_ROW_LOCKING_RANGE_XXXX_SET_WR_LOCKED, 8);
+        else
+            memcpy(ace_uid, TABLE_ACE_LOCKING_RANGE_XXXX_GET_PARAMS, 8);
+
+        hex_add(ace_uid, 8, locking_range);
+
+        if ((err = set_row(dev, ace_uid, TABLE_ACE_COLUMN_BOOLEAN_EXPR, boolean_ace, boolean_ace_len))) {
+            LOG(ERROR, "Failed to set rights for locking range (%d: %s).\n", i, i == 0 ? "reading" : "writing");
+            close_session(dev);
+            return err;
+        }
+    }
+
+    return close_session(dev);
+}
+
 int setup_range(struct disk_device *dev, unsigned char locking_range,
                 unsigned char *challenge, size_t challenge_len,
                 uint64_t start, uint64_t length,
@@ -153,10 +224,8 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
     size_t buffer_len = 0;
     unsigned char response[512] = { 0 };
     unsigned char boolean_ace[1024] = { 0 };
-    unsigned char admin_uid[8];
     unsigned char ace_uid[8];
     size_t boolean_ace_len = 0;
-
 
     if (!challenge) {
         LOG(ERROR, "PIN not specified.\n");
@@ -198,37 +267,9 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
         LOG(ERROR, "Empty authority list may cause INVALID_PARAMETER error.\n");
 
     start_list(boolean_ace, &boolean_ace_len);
-    for (i = 0; i < users_len; ++i) {
-        unsigned char user_uid[8];
-        memcpy(user_uid, AUTHORITY_XXXX_UID, 8);
-        hex_add(user_uid, 8, users[i]);
-
-        start_name(boolean_ace, &boolean_ace_len);
-        short_atom(boolean_ace, &boolean_ace_len, 1, 0, HALF_UID_AUTHORITY_OBJECT_REF, 4);
-        short_atom(boolean_ace, &boolean_ace_len, 1, 0, user_uid, 8);
-        end_name(boolean_ace, &boolean_ace_len);
-
-        if (i != 0) {
-            start_name(boolean_ace, &boolean_ace_len);
-            short_atom(boolean_ace, &boolean_ace_len, 1, 0, HALF_UID_BOOLEAN_ACE, 4);
-            tiny_atom(boolean_ace, &boolean_ace_len, 0, BOOLEAN_OR);
-            end_name(boolean_ace, &boolean_ace_len);
-        }
-    }
-
-    memcpy(admin_uid, AUTHORITY_XXXX_UID, 8);
-    hex_add(admin_uid, 8, ADMIN_BASE_ID + 1);
-
-    start_name(boolean_ace, &boolean_ace_len);
-    short_atom(boolean_ace, &boolean_ace_len, 1, 0, HALF_UID_AUTHORITY_OBJECT_REF, 4);
-    short_atom(boolean_ace, &boolean_ace_len, 1, 0, admin_uid, 8);
-    end_name(boolean_ace, &boolean_ace_len);
-
-    start_name(boolean_ace, &boolean_ace_len);
-    short_atom(boolean_ace, &boolean_ace_len, 1, 0, HALF_UID_BOOLEAN_ACE, 4);
-    tiny_atom(boolean_ace, &boolean_ace_len, 0, BOOLEAN_OR);
-    end_name(boolean_ace, &boolean_ace_len);
-
+    for (i = 0; i < users_len; ++i)
+        add_user(boolean_ace, &boolean_ace_len, users[i], i != 0);
+    add_user(boolean_ace, &boolean_ace_len, ADMIN_BASE_ID + 1, true);
     end_list(boolean_ace, &boolean_ace_len);
 
     for (i = 0; i < 3; ++i) {
