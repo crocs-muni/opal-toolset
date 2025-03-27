@@ -740,7 +740,8 @@ int setup_reactivate(struct disk_device *dev, unsigned char locking_range,
     }
 
     finish_method(buffer, &i);
-    if ((err = invoke_method(dev, buffer, i, response, sizeof(response)))) {
+
+    if ((err = invoke_method_abort(dev, buffer, i, response, sizeof(response)))) {
         LOG(ERROR, "Failed to activate Locking SP.\n");
         close_session(dev);
         return err;

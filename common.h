@@ -571,8 +571,10 @@ void finish_method(unsigned char *buffer, size_t *i);
 /**
  * Sends constructed method in buff_in and writes the response into buff_out.
 */
-int invoke_method(struct disk_device *dev, unsigned char *buff_in, size_t buff_in_len, unsigned char *buff_out,
-                  size_t buff_out_len);
+int invoke_method(struct disk_device *dev, unsigned char *buff_in, size_t buff_in_len,
+                  unsigned char *buff_out, size_t buff_out_len);
+int invoke_method_abort(struct disk_device *dev, unsigned char *buff_in, size_t buff_in_len,
+                  unsigned char *buff_out, size_t buff_out_len);
 
 /**
  * Invoke a IF-SEND/IF-RECV.
@@ -596,7 +598,7 @@ int do_level_0_discovery(struct disk_device *dev);
 /**
  * Parses the method response to get status code.
 */
-int process_method_response(const unsigned char *buffer, size_t buffer_len);
+int process_method_response(const unsigned char *buffer, size_t buffer_len, bool session_abort);
 
 /**
  * Returns parsed tiny or small atom as unsigned integer.

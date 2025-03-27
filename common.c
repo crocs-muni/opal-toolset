@@ -472,7 +472,7 @@ uint64_t parse_int(const unsigned char *buffer, size_t *i)
     return UINT64_MAX;
 }
 
-int process_method_response(const unsigned char *buffer, size_t buffer_len)
+int process_method_response(const unsigned char *buffer, size_t buffer_len, bool session_abort)
 {
     uint8_t status_code = 0;
 
@@ -530,6 +530,8 @@ int process_method_response(const unsigned char *buffer, size_t buffer_len)
         if (data[i++] != 0xa8)
             return 1;
         if (memcmp(data + i, METHOD_CLOSE_SESSION_UID, 8) == 0) {
+            if (session_abort)
+                return MSC_SUCCESS;
             LOG(ERROR, "Probably unexpected close session.\n");
             return -1;
         }
@@ -567,8 +569,8 @@ int process_method_response(const unsigned char *buffer, size_t buffer_len)
     return -1;
 }
 
-int invoke_method(struct disk_device *dev, unsigned char *buff_in, size_t buff_in_len, unsigned char *buff_out,
-                  size_t buff_out_len)
+static int _invoke_method(struct disk_device *dev, unsigned char *buff_in, size_t buff_in_len,
+                          unsigned char *buff_out, size_t buff_out_len, bool session_abort)
 {
     int err = 0;
 
@@ -580,12 +582,24 @@ int invoke_method(struct disk_device *dev, unsigned char *buff_in, size_t buff_i
         LOG(ERROR, "Failed to receive command: %i\n", err);
         return err;
     }
-    if ((err = process_method_response(buff_out, buff_out_len))) {
+    if ((err = process_method_response(buff_out, buff_out_len, session_abort))) {
         LOG(ERROR, "Received bad response: %i.\n", err);
         return err;
     }
 
     return err;
+}
+
+int invoke_method(struct disk_device *dev, unsigned char *buff_in, size_t buff_in_len,
+                  unsigned char *buff_out, size_t buff_out_len)
+{
+    return _invoke_method(dev, buff_in, buff_in_len, buff_out, buff_out_len, false);
+}
+
+int invoke_method_abort(struct disk_device *dev, unsigned char *buff_in, size_t buff_in_len,
+                  unsigned char *buff_out, size_t buff_out_len)
+{
+    return _invoke_method(dev, buff_in, buff_in_len, buff_out, buff_out_len, true);
 }
 
 void prepare_headers(unsigned char *buffer, size_t *i, struct disk_device *dev)
