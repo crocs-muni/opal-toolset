@@ -1,0 +1,17 @@
+DEV=/dev/sdh
+DEV_PSID=00000000000000000000000000000000
+PIN_ADMIN="xxx"
+PIN_USER="test"
+
+BLOCK=512
+# 16MB LUKS2 header, 32768
+START=$(( 1024 * 1024 * 16 / $BLOCK ))
+# 1G data LR
+LENGTH=$(( 1024 * 1024 * 1024 / $BLOCK ))
+
+# Note for SUM user = LR + 1
+LR=1
+USER=2
+
+# Local stored PSID or to overwite config
+[ -f config.local ] && source config.local
