@@ -359,6 +359,77 @@ int list_range(struct disk_device *dev, unsigned char locking_range,
     return 0;
 }
 
+int lr_table_info(struct disk_device *dev, unsigned char *challenge, size_t challenge_len, size_t user)
+{
+    uint64_t alignreq, blocksize, granularity, lowestlba, sum_lp;
+    bool uid_sum = false, lr_uid[LOCKING_RANGE_LR_MAX] = {};
+    int i, err = 0;
+
+    if ((err = start_session(dev, LOCKING_SP_UID, user, challenge, challenge_len))) {
+        LOG(ERROR, "Failed when setting starting session for getting locking info parameters.\n");
+        return err;
+    }
+
+    if ((err = get_row_int(dev, LOCKING_INFO_UID, LOCKING_INFO_COLUMN_ALIGNMENT_REQUIRED, &alignreq))) {
+        LOG(ERROR, "Failed to read Required Alignment.\n");
+        close_session(dev);
+        return err;
+    }
+    if ((err = get_row_int(dev, LOCKING_INFO_UID, LOCKING_INFO_COLUMN_LOGICAL_BLOCK_SIZE, &blocksize))) {
+        LOG(ERROR, "Failed to read Logical Block Size.\n");
+        close_session(dev);
+        return err;
+    }
+    if ((err = get_row_int(dev, LOCKING_INFO_UID, LOCKING_INFO_COLUMN_ALIGNMENT_GRANULARITY, &granularity))) {
+        LOG(ERROR, "Failed to read Alignment Granularity.\n");
+        close_session(dev);
+        return err;
+    }
+    if ((err = get_row_int(dev, LOCKING_INFO_UID, LOCKING_INFO_COLUMN_LOWEST_ALIGNED_LBA, &lowestlba))) {
+        LOG(ERROR, "Failed to read Lowest Aligned LBA.\n");
+        close_session(dev);
+        return err;
+    }
+
+    if (dev->features.single_user_mode.shared.feature_code) {
+
+        if ((err = get_row_int(dev, LOCKING_INFO_UID, LOCKING_INFO_COLUMN_SUM_LENGTH_POLICY, &sum_lp))) {
+            LOG(ERROR, "Failed to read SUM policy.\n");
+            close_session(dev);
+            return err;
+        }
+
+        if ((err = get_row_uid_or_list(dev, LOCKING_INFO_UID, LOCKING_INFO_COLUMN_SUM_RANGES, &uid_sum, lr_uid))) {
+            LOG(ERROR, "Failed to read SUM ranges.\n");
+            close_session(dev);
+            return err;
+        }
+    }
+
+    err = close_session(dev);
+    if (err)
+        return err;
+
+    printf("ALIGN: %" PRIu64 "\n", alignreq); /* Use the same name as in Geometry */
+    printf("LogicalBlockSize: %" PRIu64 "\n", blocksize);
+    printf("AlignmentGranularity: %" PRIu64 "\n", granularity);
+    printf("LowestAlignedLBA: %" PRIu64 "\n", lowestlba);
+
+    if (dev->features.single_user_mode.shared.feature_code) {
+        printf("RangeStartLengthPolicy: %" PRIu64 "\n", sum_lp);
+        printf("SingleUserModeRanges:");
+        if (uid_sum)
+            printf(" Locking Table");
+        else for (i = 0; i < LOCKING_RANGE_LR_MAX; i++) {
+            if (lr_uid[i])
+                printf(" %u", i);
+        }
+        printf("\n");
+    }
+
+    return 0;
+}
+
 int setup_user(struct disk_device *dev, size_t user_uid,
                unsigned char *admin_pin, size_t admin_pin_len,
                unsigned char *user_pin, size_t user_pin_len,

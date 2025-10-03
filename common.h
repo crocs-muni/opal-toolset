@@ -234,12 +234,19 @@ enum TrustedCommandDirection {
 #define LOCKING_RANGE_COLUMN_LOCK_ON_RESET_HARDWARE_RESET 1
 #define LOCKING_RANGE_COLUMN_LOCK_ON_RESET_PROGRAMMATIC 3
 #define LOCKING_RANGE_COLUMN_ACTIVE_KEY 10
+#define LOCKING_RANGE_LR_MAX 16
 
 #define LOCKING_INFO_UID UCHR("\x00\x00\x08\x01\x00\x00\x00\x01")
+#define LOCKING_INFO_COLUMN_ENCRYPT_SUPPORT 3
+#define LOCKING_INFO_COLUMN_MAX_RANGES 4
+#define LOCKING_INFO_COLUMN_MAX_REENCRYPTIONS 5
+#define LOCKING_INFO_COLUMN_KEYS_AVAILABLE_CFG 6
 #define LOCKING_INFO_COLUMN_ALIGNMENT_REQUIRED 7
 #define LOCKING_INFO_COLUMN_LOGICAL_BLOCK_SIZE 8
 #define LOCKING_INFO_COLUMN_ALIGNMENT_GRANULARITY 9
 #define LOCKING_INFO_COLUMN_LOWEST_ALIGNED_LBA 10
+#define LOCKING_INFO_COLUMN_SUM_RANGES 0x060000
+#define LOCKING_INFO_COLUMN_SUM_LENGTH_POLICY 0x060001
 
 #define TPER_RESET_COMID 0x0004
 #define TABLE_TPER_INFO_OBJ_UID UCHR("\x00\x00\x02\x01\x00\x03\x00\x01")
@@ -627,15 +634,17 @@ int skip_to_parameter(unsigned char *buffer, size_t *offset, int parameter, int 
 /**
  * Set object_uid row to contain atom. 
 */
-int set_row(struct disk_device *dev, const unsigned char *object_uid, unsigned char column,
+int set_row(struct disk_device *dev, const unsigned char *object_uid, uint32_t column,
             unsigned char *atom, size_t atom_len);
 /**
  * Acquire bytes contained in object_uid row.
 */
-int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, unsigned char column,
+int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, uint32_t column,
                   unsigned char *output, size_t output_len, size_t *output_written);
 
-int get_row_int(struct disk_device *dev, const unsigned char *object_uid, unsigned char column, uint64_t *output);
+int get_row_int(struct disk_device *dev, const unsigned char *object_uid, uint32_t column, uint64_t *output);
 
+int get_row_uid_or_list(struct disk_device *dev, const unsigned char *object_uid, uint32_t column,
+                        bool *uid_sum, bool lr_sum[LOCKING_RANGE_LR_MAX]);
 
 #endif // COMMON_H_
