@@ -23,6 +23,8 @@ int setup_range(struct disk_device *dev, unsigned char locking_range,
 int list_range(struct disk_device *dev, unsigned char locking_range,
                unsigned char *challenge, size_t challenge_len, size_t user);
 
+int lr_table_info(struct disk_device *dev, unsigned char *challenge, size_t challenge_len, size_t user);
+
 int regenerate_range(struct disk_device *dev, unsigned char locking_range,
                      unsigned char *challenge, size_t challenge_len, size_t user);
 

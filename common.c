@@ -958,7 +958,17 @@ int skip_to_parameter(unsigned char *src, size_t *offset, int parameter, int ski
     return 1;
 }
 
-int set_row(struct disk_device *dev, const unsigned char *object_uid, unsigned char column, unsigned char *atom, size_t atom_len)
+static void set_column(unsigned char *buffer, size_t *offset, uint32_t column)
+{
+    if (column < 0x40)
+        tiny_atom(buffer, offset, 0, column);
+    else {
+        uint32_t tmp = cpu_to_be32(column);
+        short_atom(buffer, offset, 0, 0, (uint8_t*)&tmp, sizeof(tmp));
+    }
+}
+
+int set_row(struct disk_device *dev, const unsigned char *object_uid, uint32_t column, unsigned char *atom, size_t atom_len)
 {
     /*
     ObjectUID.Set [
@@ -978,7 +988,7 @@ int set_row(struct disk_device *dev, const unsigned char *object_uid, unsigned c
         start_list(buffer, &i);
         {
             start_name(buffer, &i);
-            tiny_atom(buffer, &i, 0, column);
+            set_column(buffer, &i, column);
             memcpy(buffer + i, atom, atom_len);
             i += atom_len;
             end_name(buffer, &i);
@@ -996,8 +1006,9 @@ int set_row(struct disk_device *dev, const unsigned char *object_uid, unsigned c
     return err;
 }
 
-int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, unsigned char column, unsigned char *output,
-                  size_t output_len, size_t *output_written)
+static int _get_param_response(struct disk_device *dev, const unsigned char *object_uid,
+                               uint32_t column, unsigned char *buffer, size_t buffer_size,
+                               size_t *pos)
 {
     /*
     TableUID.Get [
@@ -1006,9 +1017,8 @@ int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, unsi
     =>
     [ Result : typeOr { Bytes : bytes, RowValues : list [ ColumnNumber = Value ... ] } ]
     */
-    size_t i = 0, pos;
+    size_t i = 0;
     int err = 0;
-    unsigned char buffer[2048] = { 0 };
 
     prepare_method(buffer, &i, dev, object_uid, METHOD_GET_UID);
     {
@@ -1016,32 +1026,46 @@ int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, unsi
         {
             start_name(buffer, &i);
             tiny_atom(buffer, &i, 0, METHOD_GET_PARAMETER_START);
-            tiny_atom(buffer, &i, 0, column);
+            set_column(buffer, &i, column);
             end_name(buffer, &i);
 
             start_name(buffer, &i);
             tiny_atom(buffer, &i, 0, METHOD_GET_PARAMETER_END);
-            tiny_atom(buffer, &i, 0, column);
+            set_column(buffer, &i, column);
             end_name(buffer, &i);
         }
         end_list(buffer, &i);
     }
     finish_method(buffer, &i);
 
-    if ((err = invoke_method(dev, buffer, i, buffer, sizeof(buffer))))
+    if ((err = invoke_method(dev, buffer, i, buffer, buffer_size)))
         return err;
 
-    pos = sizeof(struct packet_headers);
-    if (buffer[pos + 0] != START_LIST_TOKEN || buffer[pos + 1] != START_LIST_TOKEN ||
-        buffer[pos + 2] != START_NAME_TOKEN) {
+    *pos = sizeof(struct packet_headers);
+    if (buffer[*pos + 0] != START_LIST_TOKEN || buffer[*pos + 1] != START_LIST_TOKEN ||
+        buffer[*pos + 2] != START_NAME_TOKEN) {
         LOG(ERROR, "Unexpected tokens received.\n");
-        return err;
+        return 1;
     }
-    pos += 3;
-    if (parse_int(buffer, &pos) != column) {
+    *pos += 3;
+    if (parse_int(buffer, pos) != column) {
         LOG(ERROR, "Unexpected column received.\n");
-        return err;
+        return 1;
     }
+
+    return 0;
+}
+
+int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, uint32_t column, unsigned char *output,
+                  size_t output_len, size_t *output_written)
+{
+    size_t pos;
+    int err = 0;
+    unsigned char buffer[2048] = { 0 };
+
+    if ((err = _get_param_response(dev, object_uid, column, buffer, sizeof(buffer), &pos)))
+        return err;
+
     if ((err = parse_bytes(buffer, &pos, output, output_len, output_written))) {
         LOG(ERROR, "Failed to parse output.\n");
         return err;
@@ -1050,7 +1074,45 @@ int get_row_bytes(struct disk_device *dev, const unsigned char *object_uid, unsi
     return err;
 }
 
-int get_row_int(struct disk_device *dev, const unsigned char *object_uid, unsigned char column, uint64_t *output)
+int get_row_uid_or_list(struct disk_device *dev, const unsigned char *object_uid, uint32_t column,
+                        bool *uid_sum, bool lr_sum[LOCKING_RANGE_LR_MAX])
+{
+    size_t pos, len;
+    int err = 0;
+    unsigned int lr;
+    unsigned char buffer[2048] = { 0 }, uid[8];
+
+    if ((err = _get_param_response(dev, object_uid,column, buffer, sizeof(buffer), &pos)))
+        return err;
+
+    if (buffer[pos] == START_LIST_TOKEN) {
+        pos++;
+        while (buffer[pos] != END_LIST_TOKEN && pos < sizeof(buffer)) {
+            err = parse_bytes(buffer, &pos, uid, sizeof(uid), &len);
+            if (err || len != 8 || memcmp(uid, LOCKING_RANGE_NNNN_UID, 7)) {
+                LOG(ERROR, "Wrong Locking range UID returned.\n");
+                return 1;
+            }
+            lr = (unsigned int)uid[7];
+            if (lr >= LOCKING_RANGE_LR_MAX) {
+                LOG(ERROR, "Wrong Locking range number returned.\n");
+                return 1;
+            }
+            lr_sum[lr] = true;
+        }
+    } else {
+        err = parse_bytes(buffer, &pos, uid, sizeof(uid), &len);
+        if (err || memcmp(uid, LOCKING_TABLE_UID, 8)) {
+            LOG(ERROR, "Wrong Locking table UID returned.\n");
+            return 1;
+        }
+        *uid_sum = true;
+    }
+
+    return 0;
+}
+
+int get_row_int(struct disk_device *dev, const unsigned char *object_uid, uint32_t column, uint64_t *output)
 {
     /*
     TableUID.Get [
@@ -1070,12 +1132,12 @@ int get_row_int(struct disk_device *dev, const unsigned char *object_uid, unsign
         {
             start_name(buffer, &i);
             tiny_atom(buffer, &i, 0, METHOD_GET_PARAMETER_START);
-            tiny_atom(buffer, &i, 0, column);
+            set_column(buffer, &i, column);
             end_name(buffer, &i);
 
             start_name(buffer, &i);
             tiny_atom(buffer, &i, 0, METHOD_GET_PARAMETER_END);
-            tiny_atom(buffer, &i, 0, column);
+            set_column(buffer, &i, column);
             end_name(buffer, &i);
         }
         end_list(buffer, &i);

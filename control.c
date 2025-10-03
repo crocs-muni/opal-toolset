@@ -59,6 +59,14 @@ static struct argp_option options_list_range[] = {
     { 0 }
 };
 
+static struct argp_option options_lr_table_info[] = {
+    { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of user authority", 0 },
+    { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of user authority", 0 },
+    { "user", ARG_KEY_USER, "id", 0, "User authority id", 0 },
+    { "admin", ARG_KEY_ADMIN, "id", 0, "Admin authority to authenticate as", 0 },
+    { 0 }
+};
+
 static struct argp_option options_setup_user[] = {
     { "verify-pin", ARG_KEY_VERIFY_PIN, "pin", 0, "Password of Admin1 authority", 0 },
     { "verify-pin-hex", ARG_KEY_VERIFY_PIN_HEX, "hex_pin", 0, "Password of Admin1 authority", 0 },
@@ -177,6 +185,7 @@ struct Arguments {
         CMD_RESET,
         CMD_REGENERATE_KEY,
         CMD_LIST_RANGE,
+        CMD_LR_TABLE_INFO,
         CMD_STACK_RESET,
         CMD_SETUP_RESET,
         CMD_ERASE_RANGE,
@@ -304,6 +313,8 @@ static error_t parse_opt_main(int key, char *arg, struct argp_state *state)
                 arguments->command = CMD_ERASE_RANGE;
             else if (strcmp(arg, "list_range") == 0)
                 arguments->command = CMD_LIST_RANGE;
+            else if (strcmp(arg, "lr_table_info") == 0)
+                arguments->command = CMD_LR_TABLE_INFO;
             else if (strcmp(arg, "setup_reactivate") == 0)
                 arguments->command = CMD_SETUP_REACTIVATE;
             else if (strcmp(arg, "setup_enable_range") == 0)
@@ -385,6 +396,7 @@ int main(int argc, char **argv)
     struct argp argp_unlock = { options_unlock, parse_opt_child, NULL, "unlock_doc", 0, 0, 0 };
     struct argp argp_setup_range = { options_setup_range, parse_opt_child, NULL, "setup_range_doc", 0, 0, 0 };
     struct argp argp_list_range = { options_list_range, parse_opt_child, NULL, "list_range_doc", 0, 0, 0 };
+    struct argp argp_lr_table_info = { options_lr_table_info, parse_opt_child, NULL, "lr_table_info_doc", 0, 0, 0 };
     struct argp argp_setup_user = { options_setup_user, parse_opt_child, NULL, "setup_user_doc", 0, 0, 0 };
     struct argp argp_setup_tper = { options_setup_tper, parse_opt_child, NULL, "setup_tper_doc", 0, 0, 0 };
     struct argp argp_psid_revert = { options_psid_revert, parse_opt_child, NULL, "psid_revert_doc", 0, 0, 0 };
@@ -401,6 +413,7 @@ int main(int argc, char **argv)
         { &argp_unlock, 0, "unlock - Lock or unlock a locking range", 0 },
         { &argp_setup_range, 0, "setup_range - Configure a locking range", 0 },
         { &argp_list_range, 0, "list_range - List the locking range", 0 },
+        { &argp_lr_table_info, 0, "lr_table_info - List the locking range info", 0 },
         { &argp_setup_user, 0, "setup_user - Enable a user", 0 },
         { &argp_setup_tper, 0, "setup_tper - Take ownership over the device", 0 },
         { &argp_psid_revert, 0, "psid_revert - Revert the device to factory state", 0 },
@@ -478,6 +491,8 @@ int main(int argc, char **argv)
     else if (args.command == CMD_LIST_RANGE)
         err = list_range(&dev, args.locking_range,
                          args.verify_pin, args.verify_pin_len, args.user[0]);
+    else if (args.command == CMD_LR_TABLE_INFO)
+        err = lr_table_info(&dev, args.verify_pin, args.verify_pin_len, args.user[0]);
     else if (args.command == CMD_SETUP_REACTIVATE)
         err = setup_reactivate(&dev, args.locking_range,
                                args.sum, args.sum_range_admin,
