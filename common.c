@@ -447,6 +447,15 @@ void medium_atom(unsigned char *buffer, size_t *i, unsigned char B, unsigned cha
     *i += V_len;
 }
 
+/* Use shortest atom */
+void byte_sequence_atom(unsigned char *buffer, size_t *offset, const uint8_t *value, size_t value_len)
+{
+    if (value_len <= 15)
+        short_atom(buffer, offset, 1, 0, value, value_len);
+    else
+        medium_atom(buffer, offset, 1, 0, value, value_len);
+}
+
 uint64_t parse_int(const unsigned char *buffer, size_t *i)
 {
     uint64_t result = 0;
@@ -709,13 +718,13 @@ static int generate_start_session_method(struct disk_device *dev, unsigned char 
         if (host_challenge) {
             start_name(buffer, i);
             tiny_atom(buffer, i, 0, 0);
-            medium_atom(buffer, i, 1, 0, host_challenge, host_challenge_len);
+            byte_sequence_atom(buffer, i, host_challenge, host_challenge_len);
             end_name(buffer, i);
         }
         if (host_signing_authority) {
             start_name(buffer, i);
             tiny_atom(buffer, i, 0, 3);
-            short_atom(buffer, i, 1, 0, host_signing_authority, host_signing_authority_len);
+            byte_sequence_atom(buffer, i, host_signing_authority, host_signing_authority_len);
             end_name(buffer, i);
         }
     }

@@ -504,7 +504,7 @@ int setup_user(struct disk_device *dev, size_t user_uid,
     memcpy(c_pin_str, TABLE_C_PIN_UID, 8);
     hex_add(c_pin_str, 8, user_uid);
 
-    medium_atom(atom_pin, &atom_pin_len, 1, 0, user_pin, user_pin_len);
+    byte_sequence_atom(atom_pin, &atom_pin_len, user_pin, user_pin_len);
 
     if ((err = set_row(dev, c_pin_str, TABLE_C_PIN_COLUMN_PIN, atom_pin, atom_pin_len))) {
         LOG(ERROR, "Failed to set pin of User authority.\n");
@@ -542,7 +542,7 @@ int setup_password(struct disk_device *dev, size_t users[], size_t users_len,
     memcpy(c_pin_str, TABLE_C_PIN_UID, 8);
     hex_add(c_pin_str, 8, users[1]);
 
-    medium_atom(atom_pin, &atom_pin_len, 1, 0, user1_pin, user1_pin_len);
+    byte_sequence_atom(atom_pin, &atom_pin_len, user1_pin, user1_pin_len);
 
     if ((err = set_row(dev, c_pin_str, TABLE_C_PIN_COLUMN_PIN, atom_pin, atom_pin_len))) {
         LOG(ERROR, "Failed to set pin of the authority.\n");
@@ -869,7 +869,7 @@ int setup_tper(struct disk_device *dev, const unsigned char *sid_pwd, size_t sid
         return err;
     }
 
-    medium_atom(atom, &atom_len, 1, 0, sid_pwd, sid_pwd_len);
+    byte_sequence_atom(atom, &atom_len, sid_pwd, sid_pwd_len);
     if ((err = set_row(dev, TABLE_C_PIN_ROW_SID_UID, TABLE_C_PIN_COLUMN_PIN, atom, atom_len))) {
         LOG(ERROR, "Failed to update SID password.\n");
         close_session(dev);
