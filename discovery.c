@@ -188,7 +188,9 @@ static void print_level_0_discovery(struct disk_device *dev)
                "  }",
                body->shared.descriptor_version, be16_to_cpu(body->base_comID),
                be16_to_cpu(body->number_of_comIDs), body->range_crossing);
-    } else if (dev->features.single_user_mode.shared.feature_code) {
+    }
+
+    if (dev->features.single_user_mode.shared.feature_code) {
         struct level_0_discovery_single_user_mode_feature *body = &dev->features.single_user_mode;
 
         print_comma_start(&first);
